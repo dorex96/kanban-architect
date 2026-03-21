@@ -7,12 +7,12 @@ AI-powered Kanban board. TypeScript monorepo: Next.js 14 frontend, Hono API, sha
 ## Architecture Rules
 
 1. **Board never depends on agent.** Deleting `agent/` must not break the Kanban board.
-2. **Routers → Services → Prisma.** No business logic in routers or agent tools. Services call Prisma exclusively.
+2. **Feature-Based (Vertical Slice) Architecture.** Each domain lives in `features/<name>/` with its own router, service, and schema. No business logic in routers or agent tools. Services call Prisma exclusively.
 3. **`LLM_PROVIDER` env var switches the entire LLM stack** (`openai | anthropic | ollama`). One change for fully local.
-4. **`positionIndex` is always a Float.** Fractional insertion only (e.g. between 1.0 and 2.0 → 1.5). Lives in `task.service.ts`, never leaks to routers/agent.
+4. **`positionIndex` is always a Float.** Fractional insertion only (e.g. between 1.0 and 2.0 → 1.5). Lives in `features/tasks/tasks.service.ts`, never leaks to routers/agent.
 5. **All frontend API calls go through `lib/api.ts`.** No raw `fetch` in components or hooks.
 6. **Shared types live in `packages/types/` only.** Import as `@kanban/types`. Never duplicate across apps.
-7. **Every mutation writes to `Events` table** via `event.service.ts`, called from the service layer.
+7. **Every mutation writes to `Events` table** via `features/events/events.service.ts`, called from the service layer.
 
 ## Monorepo Layout
 
@@ -40,28 +40,37 @@ components/agent/   → AgentSidebar, AgentMessage, ThoughtProcess
 
 ## Backend (`apps/api/`)
 
-### Directory layout
+### Directory layout (Vertical Slice)
 
 ```
 src/
-├── index.ts              # Entry: mounts routers, CORS, global error handler
+├── index.ts              # Entry: mounts feature routers, global middleware
 ├── config.ts             # Zod-parsed env vars (throws on missing)
-├── routers/              # HTTP parsing only
-│   ├── projects.ts
-│   ├── tasks.ts          # Includes PATCH /tasks/:id/reorder
-│   └── agent.ts          # POST /agent/run → streamText()
-├── services/
-│   ├── task.service.ts   # Fractional positionIndex logic lives here
-│   └── event.service.ts  # All mutations log events here
-├── agent/
-│   ├── tools.ts          # getBoardState, createTask, updateTaskStatus
-│   ├── coordinator.ts
-│   ├── prompts.ts        # Strings only — no business logic
-│   └── providers/
-│       └── base.ts       # getLLM() → LanguageModelV1 (+ openai.ts, anthropic.ts, ollama.ts)
-└── lib/
-    ├── prisma.ts         # Singleton client
-    └── errors.ts         # HttpError class
+├── features/             # Domain-specific vertical slices
+│   ├── projects/
+│   │   ├── projects.router.ts    # HTTP parsing only
+│   │   ├── projects.service.ts   # Business logic + Prisma
+│   │   └── projects.schema.ts    # Zod request schemas
+│   ├── tasks/
+│   │   ├── tasks.router.ts       # Includes PATCH /tasks/:id/reorder
+│   │   ├── tasks.service.ts      # Fractional positionIndex logic
+│   │   └── tasks.schema.ts       # Zod request schemas
+│   ├── events/
+│   │   └── events.service.ts     # All mutations log events here
+│   └── agent/                    # (future)
+│       ├── agent.router.ts       # POST /agent/run → streamText()
+│       ├── agent.tools.ts        # getBoardState, createTask, updateTaskStatus
+│       ├── agent.coordinator.ts
+│       ├── agent.prompts.ts      # Strings only — no business logic
+│       └── providers/
+│           └── base.ts           # getLLM() → LanguageModelV1
+├── lib/                  # Shared utilities and clients
+│   ├── prisma.ts         # Singleton client
+│   └── errors.ts         # HttpError class
+├── middlewares/           # Global middlewares
+│   └── error-handler.ts  # HttpError → JSON response
+└── common/               # Shared Zod schemas or types
+    └── schemas.ts        # e.g. taskStatusEnum
 ```
 
 ### Patterns
@@ -83,7 +92,7 @@ createTask(projectId, title, description)  // → { success, taskId, error? }
 updateTaskStatus(taskId, newStatus)        // → { success, previousStatus, newStatus, error? }
 ```
 
-Tools call `task.service.ts`, never Prisma directly. All mutations trigger `event.service.ts`.
+Tools call `features/tasks/tasks.service.ts`, never Prisma directly. All mutations trigger `features/events/events.service.ts`.
 
 ### System prompt rules (enforced in `prompts.ts`)
 
@@ -126,5 +135,5 @@ interface AgentLogEntry {
 ## Testing (`apps/api/tests/`)
 
 - **`tools.test.ts`** — Mock Prisma (`jest.mock`), no HTTP, no LLM. Tools must be testable without an LLM.
-- **`task.service.test.ts`** — Fractional positionIndex logic and event writing.
-- **`routers.test.ts`** — Integration via Hono's `app.request()`. Test DB seeded in `beforeEach`.
+- **`tasks.service.test.ts`** — Fractional positionIndex logic and event writing.
+- **`*.router.test.ts`** — Integration via Hono's `app.request()`. Test DB seeded in `beforeEach`.

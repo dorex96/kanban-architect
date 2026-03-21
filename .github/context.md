@@ -8,7 +8,7 @@
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
 - **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), `useProjects` SWR hook, `lib/api.ts` client.
-- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project & Task CRUD endpoints, Prisma client, Zod config.
+- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project & Task CRUD endpoints, Prisma client, Zod config. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
 - **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`.
 - **Database:** PostgreSQL via local install. Prisma schema with 4 models, initial migration applied (`20260321183854_init`).
 
@@ -19,14 +19,14 @@
 | Root monorepo config | DONE | `package.json`, `turbo.json`, `tsconfig.json`, `.gitignore`, `.npmrc` |
 | Shared types package | DONE | `packages/types/src/index.ts`, `packages/types/package.json` |
 | Prisma schema + migrations | DONE | `apps/api/prisma/schema.prisma`, `apps/api/prisma/migrations/` |
-| API scaffold (Hono entry) | DONE | `apps/api/src/index.ts`, `config.ts`, `lib/prisma.ts`, `lib/errors.ts` |
-| Project & Task services | DONE | `apps/api/src/services/event.service.ts`, `project.service.ts`, `task.service.ts` |
-| Project & Task routers | DONE | `apps/api/src/routers/projects.ts`, `tasks.ts` |
+| API scaffold (Hono entry) | DONE | `apps/api/src/index.ts`, `config.ts`, `lib/prisma.ts`, `lib/errors.ts`, `middlewares/error-handler.ts` |
+| Project & Task features | DONE | `apps/api/src/features/projects/`, `features/tasks/`, `features/events/` |
+| Common schemas | DONE | `apps/api/src/common/schemas.ts` |
 | Frontend scaffold (Next.js) | DONE | `apps/web/app/layout.tsx`, `app/page.tsx`, `lib/api.ts`, `lib/utils.ts` |
 | Project list UI (CRUD) | DONE | `components/projects/ProjectList.tsx`, `ProjectCard.tsx`, `AddProjectForm.tsx`, `hooks/useProjects.ts` |
 | KanbanBoard + DnD | NOT STARTED | `apps/web/components/board/` |
-| Agent tools layer | NOT STARTED | `apps/api/src/agent/tools.ts` |
-| Agent coordinator + SSE | NOT STARTED | `apps/api/src/agent/coordinator.ts`, `routers/agent.ts` |
+| Agent tools layer | NOT STARTED | `apps/api/src/features/agent/agent.tools.ts` |
+| Agent coordinator + SSE | NOT STARTED | `apps/api/src/features/agent/agent.coordinator.ts`, `agent.router.ts` |
 | AgentSidebar + ThoughtProcess | NOT STARTED | `apps/web/components/agent/` |
 | Docker compose (working) | DONE | `docker-compose.yml` (PostgreSQL 16, optional — local PG used) |
 | Tests | NOT STARTED | `apps/api/tests/` |
@@ -54,6 +54,7 @@
 
 ## Active Decisions
 
+- Using Feature-Based (Vertical Slice) Architecture for the API: `features/`, `lib/`, `middlewares/`, `common/`.
 - Using npm workspaces (not pnpm) with Node 22.
 - Local PostgreSQL (not Docker) for development. Docker Compose available as optional.
 - DB connection URL: `postgresql://postgres:postgres@host.docker.internal:5432/kanban-architect`
@@ -81,10 +82,19 @@
 `apps/api/tsconfig.json` → API TS config (NodeNext module)
 `apps/api/.env` → API local env (DATABASE_URL)
 `apps/api/.env.example` → API env template
-`apps/api/src/index.ts` → Hono entry point (CORS, health check, port 4000)
+`apps/api/src/index.ts` → Hono entry point (CORS, health check, mounts feature routers, port 4000)
 `apps/api/src/config.ts` → Zod-parsed environment config
 `apps/api/src/lib/prisma.ts` → Prisma singleton client
 `apps/api/src/lib/errors.ts` → HttpError class
+`apps/api/src/middlewares/error-handler.ts` → Global error handler middleware (HttpError → JSON)
+`apps/api/src/common/schemas.ts` → Shared Zod schemas (taskStatusEnum)
+`apps/api/src/features/events/events.service.ts` → logEvent(projectId, action, taskId?) — writes to Event table
+`apps/api/src/features/projects/projects.schema.ts` → Zod schemas for project routes
+`apps/api/src/features/projects/projects.service.ts` → listProjects, createProject, updateProject, deleteProject
+`apps/api/src/features/projects/projects.router.ts` → GET/POST/PATCH/DELETE /projects
+`apps/api/src/features/tasks/tasks.schema.ts` → Zod schemas for task routes
+`apps/api/src/features/tasks/tasks.service.ts` → listTasks, createTask (positionIndex auto), updateTask, deleteTask, reorderTask
+`apps/api/src/features/tasks/tasks.router.ts` → GET/POST/PATCH/DELETE /tasks + PATCH /tasks/:id/reorder
 `apps/api/prisma/schema.prisma` → Database schema (Project, Task, Event, AgentLog)
 `apps/web/package.json` → @kanban/web package config
 `apps/web/tsconfig.json` → Frontend TS config (Next.js)
@@ -102,8 +112,3 @@
 `apps/web/components/projects/ProjectList.tsx` → Client component: renders project list with add form and cards
 `apps/web/components/projects/ProjectCard.tsx` → Client component: project card with inline rename, delete, link to board
 `apps/web/components/projects/AddProjectForm.tsx` → Client component: form to create a new project
-`apps/api/src/services/event.service.ts` → logEvent(projectId, action, taskId?) — writes to Event table
-`apps/api/src/services/project.service.ts` → listProjects, createProject, updateProject, deleteProject
-`apps/api/src/services/task.service.ts` → listTasks, createTask (positionIndex auto), updateTask, deleteTask, reorderTask
-`apps/api/src/routers/projects.ts` → GET/POST/PATCH/DELETE /projects (Zod-validated)
-`apps/api/src/routers/tasks.ts` → GET/POST/PATCH/DELETE /tasks + PATCH /tasks/:id/reorder (Zod-validated)

@@ -1,6 +1,6 @@
-import { prisma } from '../lib/prisma.js';
-import { HttpError } from '../lib/errors.js';
-import { logEvent } from './event.service.js';
+import { prisma } from '../../lib/prisma.js';
+import { HttpError } from '../../lib/errors.js';
+import { logEvent } from '../events/events.service.js';
 import type { Task, TaskStatus } from '@kanban/types';
 
 export async function listTasks(projectId: string): Promise<Task[]> {

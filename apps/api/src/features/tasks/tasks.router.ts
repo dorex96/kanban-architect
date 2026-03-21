@@ -1,22 +1,25 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
 import {
   listTasks,
   createTask,
   updateTask,
   deleteTask,
   reorderTask,
-} from '../services/task.service.js';
-
-const taskStatusEnum = z.enum(['INBOX', 'TODO', 'IN_PROGRESS', 'DONE']);
+} from './tasks.service.js';
+import {
+  listTasksQuerySchema,
+  createTaskSchema,
+  updateTaskSchema,
+  reorderTaskSchema,
+} from './tasks.schema.js';
 
 const router = new Hono();
 
 // GET /tasks?projectId=
 router.get(
   '/',
-  zValidator('query', z.object({ projectId: z.string().min(1) })),
+  zValidator('query', listTasksQuerySchema),
   async (c) => {
     const { projectId } = c.req.valid('query');
     const tasks = await listTasks(projectId);
@@ -27,14 +30,7 @@ router.get(
 // POST /tasks
 router.post(
   '/',
-  zValidator(
-    'json',
-    z.object({
-      projectId: z.string().min(1),
-      title: z.string().min(1),
-      description: z.string().optional(),
-    }),
-  ),
+  zValidator('json', createTaskSchema),
   async (c) => {
     const { projectId, title, description } = c.req.valid('json');
     const task = await createTask(projectId, title, description);
@@ -45,18 +41,7 @@ router.post(
 // PATCH /tasks/:id
 router.patch(
   '/:id',
-  zValidator(
-    'json',
-    z
-      .object({
-        title: z.string().min(1).optional(),
-        description: z.string().optional(),
-        status: taskStatusEnum.optional(),
-      })
-      .refine((d) => Object.keys(d).length > 0, {
-        message: 'At least one field required',
-      }),
-  ),
+  zValidator('json', updateTaskSchema),
   async (c) => {
     const data = c.req.valid('json');
     const task = await updateTask(c.req.param('id'), data);
@@ -67,7 +52,7 @@ router.patch(
 // PATCH /tasks/:id/reorder
 router.patch(
   '/:id/reorder',
-  zValidator('json', z.object({ positionIndex: z.number() })),
+  zValidator('json', reorderTaskSchema),
   async (c) => {
     const { positionIndex } = c.req.valid('json');
     const task = await reorderTask(c.req.param('id'), positionIndex);

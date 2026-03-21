@@ -1,12 +1,12 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { z } from 'zod';
 import {
   listProjects,
   createProject,
   updateProject,
   deleteProject,
-} from '../services/project.service.js';
+} from './projects.service.js';
+import { createProjectSchema, updateProjectSchema } from './projects.schema.js';
 
 const router = new Hono();
 
@@ -19,7 +19,7 @@ router.get('/', async (c) => {
 // POST /projects
 router.post(
   '/',
-  zValidator('json', z.object({ name: z.string().min(1) })),
+  zValidator('json', createProjectSchema),
   async (c) => {
     const { name } = c.req.valid('json');
     const project = await createProject(name);
@@ -30,7 +30,7 @@ router.post(
 // PATCH /projects/:id
 router.patch(
   '/:id',
-  zValidator('json', z.object({ name: z.string().min(1) })),
+  zValidator('json', updateProjectSchema),
   async (c) => {
     const { name } = c.req.valid('json');
     const project = await updateProject(c.req.param('id'), name);
