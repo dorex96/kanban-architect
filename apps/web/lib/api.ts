@@ -5,11 +5,25 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
+
+  const contentType = res.headers.get('content-type');
+
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
+    const body = contentType?.includes('application/json')
+      ? await res.json().catch(() => ({}))
+      : {};
     throw new Error(body.error || `Request failed: ${res.status}`);
   }
-  return res.json();
+
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  if (contentType?.includes('application/json')) {
+    return res.json() as Promise<T>;
+  }
+
+  return (await res.text()) as T;
 }
 
 export const api = {

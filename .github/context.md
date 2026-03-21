@@ -4,7 +4,7 @@
 
 ## Current State
 
-- **Phase:** Project list UI complete — CRUD interface for projects at `/`, SWR data layer, type-check passing.
+- **Phase:** Project list UI complete — CRUD interface for projects at `/`, SWR data layer, delete confirmation modal added, type-check passing.
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
 - **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), `useProjects` SWR hook, `lib/api.ts` client.
@@ -107,8 +107,8 @@
 `apps/web/app/globals.css` → Tailwind directives
 `apps/web/app/page.tsx` → Projects landing page (server component, fetches initial data)
 `apps/web/lib/utils.ts` → cn() utility (clsx + tailwind-merge)
-`apps/web/lib/api.ts` → Centralized API client (get, post, patch, delete)
+`apps/web/lib/api.ts` → Centralized API client (get, post, patch, delete, 204-safe response parsing)
 `apps/web/hooks/useProjects.ts` → SWR hook for project CRUD (list, add, rename, delete) with optimistic updates
 `apps/web/components/projects/ProjectList.tsx` → Client component: renders project list with add form and cards
-`apps/web/components/projects/ProjectCard.tsx` → Client component: project card with inline rename, delete, link to board
+`apps/web/components/projects/ProjectCard.tsx` → Client component: project card with inline rename, delete confirmation modal, link to board
 `apps/web/components/projects/AddProjectForm.tsx` → Client component: form to create a new project
