@@ -1,0 +1,17 @@
+{
+  "name": "kanban-architect",
+  "private": true,
+  "packageManager": "npm@11.10.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "db:migrate": "npm run db:migrate --workspace=@kanban/api",
+    "db:studio": "npm run db:studio --workspace=@kanban/api"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  }
+}
