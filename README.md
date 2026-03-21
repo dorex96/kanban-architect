@@ -128,32 +128,31 @@ curl http://localhost:4000/health
 ## Project Structure
 
 ```
-├── package.json              # Root monorepo config (npm workspaces)
-├── turbo.json                # Turborepo pipeline config
-├── tsconfig.json             # Base TypeScript config
-├── docker-compose.yml        # PostgreSQL service (optional)
+├── .github/
 ├── apps/
 │   ├── api/
-│   │   ├── src/
-│   │   │   ├── index.ts      # Hono entry point (CORS, health check)
-│   │   │   ├── config.ts     # Zod-parsed env vars
-│   │   │   └── lib/
-│   │   │       ├── prisma.ts # Prisma singleton client
-│   │   │       └── errors.ts # HttpError class
-│   │   └── prisma/
-│   │       └── schema.prisma # Database schema
+│   │   ├── prisma/
+│   │   │   └── migrations/
+│   │   └── src/
+│   │       ├── common/
+│   │       ├── features/
+│   │       │   ├── events/
+│   │       │   ├── projects/
+│   │       │   └── tasks/
+│   │       ├── lib/
+│   │       └── middlewares/
 │   └── web/
 │       ├── app/
-│       │   ├── layout.tsx    # Root layout with Tailwind
-│       │   ├── page.tsx      # Landing page
-│       │   └── globals.css   # Tailwind directives
+│       │   └── board/
+│       │       └── [projectId]/
+│       ├── components/
+│       │   ├── board/
+│       │   └── projects/
+│       ├── hooks/
 │       └── lib/
-│           ├── api.ts        # Centralized API client
-│           └── utils.ts      # cn() utility (clsx + tailwind-merge)
 └── packages/
     └── types/
         └── src/
-            └── index.ts      # Shared types (Task, Project, Event, etc.)
 ```
 
 ## Tech Stack
