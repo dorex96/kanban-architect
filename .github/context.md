@@ -11,6 +11,7 @@
 - **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Prisma client, Zod config. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
 - **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`.
 - **Database:** PostgreSQL via local install. Prisma schema with 4 models, initial migration applied (`20260321183854_init`).
+- **README:** Includes a clear "Project Status: Work in Progress" section for public-repo expectations.
 
 ## Build Progress
 

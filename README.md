@@ -4,6 +4,39 @@ AI-powered Kanban board. Type a goal and an AI agent creates tasks on the board 
 
 TypeScript monorepo: **Next.js 14** frontend, **Hono** API, shared types.
 
+## Project Status: Work in Progress
+
+This repository is public as a build-in-public project.
+Core Kanban features are implemented and usable, but the AI agent layer and automated tests are still in progress.
+
+### What works now
+
+- Project creation, rename, and delete
+- Board view with 4 columns (`INBOX`, `TODO`, `IN_PROGRESS`, `DONE`)
+- Task creation, rename, delete
+- Drag-and-drop reordering with fractional `positionIndex`
+- API with feature-based slices (`projects`, `tasks`, `events`)
+- Shared types package for frontend and backend
+
+### Not finished yet
+
+- Agent feature slice in API (`tools`, `coordinator`, SSE endpoint)
+- Frontend agent UI (`AgentSidebar`, `ThoughtProcess`)
+- Automated tests (`tools`, `service`, and router tests)
+
+### Current limitations
+
+- Not production-hardened yet
+- Test coverage is incomplete
+- AI workflow is not wired end-to-end
+
+### Roadmap
+
+1. Implement agent tools and coordinator in API
+2. Add streaming agent endpoint and frontend chat sidebar
+3. Add service and router tests
+4. Improve production readiness (validation, observability, deployment docs)
+
 ## Architecture
 
 ```
