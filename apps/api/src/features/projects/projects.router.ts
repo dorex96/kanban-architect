@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import {
   listProjects,
+  getProject,
   createProject,
   updateProject,
   deleteProject,
@@ -14,6 +15,12 @@ const router = new Hono();
 router.get('/', async (c) => {
   const projects = await listProjects();
   return c.json(projects);
+});
+
+// GET /projects/:id
+router.get('/:id', async (c) => {
+  const project = await getProject(c.req.param('id'));
+  return c.json(project);
 });
 
 // POST /projects

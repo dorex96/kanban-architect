@@ -8,6 +8,12 @@ export async function listProjects(): Promise<Project[]> {
   return rows.map(toProject);
 }
 
+export async function getProject(id: string): Promise<Project> {
+  const row = await prisma.project.findUnique({ where: { id } });
+  if (!row) throw new HttpError(404, 'Project not found');
+  return toProject(row);
+}
+
 export async function createProject(name: string): Promise<Project> {
   const project = await prisma.project.create({ data: { name } });
   await logEvent(project.id, 'project.created');

@@ -4,11 +4,11 @@
 
 ## Current State
 
-- **Phase:** Project list UI complete — CRUD interface for projects at `/`, SWR data layer, delete confirmation modal added, type-check passing.
+- **Phase:** Kanban board UI complete — project list at `/`, board view at `/board/[projectId]` with 4-column Kanban (INBOX/TODO/IN_PROGRESS/DONE), task CRUD (add/rename/delete), drag-and-drop to move tasks between columns, type-check passing.
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
-- **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), `useProjects` SWR hook, `lib/api.ts` client.
-- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project & Task CRUD endpoints, Prisma client, Zod config. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
+- **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), board view at `/board/[projectId]` with DnD columns, `useProjects` + `useBoard` SWR hooks, `lib/api.ts` client.
+- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Prisma client, Zod config. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
 - **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`.
 - **Database:** PostgreSQL via local install. Prisma schema with 4 models, initial migration applied (`20260321183854_init`).
 
@@ -24,7 +24,7 @@
 | Common schemas | DONE | `apps/api/src/common/schemas.ts` |
 | Frontend scaffold (Next.js) | DONE | `apps/web/app/layout.tsx`, `app/page.tsx`, `lib/api.ts`, `lib/utils.ts` |
 | Project list UI (CRUD) | DONE | `components/projects/ProjectList.tsx`, `ProjectCard.tsx`, `AddProjectForm.tsx`, `hooks/useProjects.ts` |
-| KanbanBoard + DnD | NOT STARTED | `apps/web/components/board/` |
+| KanbanBoard + DnD | DONE | `apps/web/app/board/[projectId]/page.tsx`, `components/board/KanbanBoard.tsx`, `KanbanColumn.tsx`, `TaskCard.tsx`, `AddTaskInline.tsx`, `hooks/useBoard.ts` |
 | Agent tools layer | NOT STARTED | `apps/api/src/features/agent/agent.tools.ts` |
 | Agent coordinator + SSE | NOT STARTED | `apps/api/src/features/agent/agent.coordinator.ts`, `agent.router.ts` |
 | AgentSidebar + ThoughtProcess | NOT STARTED | `apps/web/components/agent/` |
@@ -90,8 +90,8 @@
 `apps/api/src/common/schemas.ts` → Shared Zod schemas (taskStatusEnum)
 `apps/api/src/features/events/events.service.ts` → logEvent(projectId, action, taskId?) — writes to Event table
 `apps/api/src/features/projects/projects.schema.ts` → Zod schemas for project routes
-`apps/api/src/features/projects/projects.service.ts` → listProjects, createProject, updateProject, deleteProject
-`apps/api/src/features/projects/projects.router.ts` → GET/POST/PATCH/DELETE /projects
+`apps/api/src/features/projects/projects.service.ts` → getProject, listProjects, createProject, updateProject, deleteProject
+`apps/api/src/features/projects/projects.router.ts` → GET/GET:id/POST/PATCH/DELETE /projects
 `apps/api/src/features/tasks/tasks.schema.ts` → Zod schemas for task routes
 `apps/api/src/features/tasks/tasks.service.ts` → listTasks, createTask (positionIndex auto), updateTask, deleteTask, reorderTask
 `apps/api/src/features/tasks/tasks.router.ts` → GET/POST/PATCH/DELETE /tasks + PATCH /tasks/:id/reorder
@@ -112,3 +112,9 @@
 `apps/web/components/projects/ProjectList.tsx` → Client component: renders project list with add form and cards
 `apps/web/components/projects/ProjectCard.tsx` → Client component: project card with inline rename, delete confirmation modal, link to board
 `apps/web/components/projects/AddProjectForm.tsx` → Client component: form to create a new project
+`apps/web/app/board/[projectId]/page.tsx` → Board page (server component, fetches project + tasks SSR)
+`apps/web/hooks/useBoard.ts` → SWR hook for board data (grouped by status) + task CRUD with optimistic updates
+`apps/web/components/board/KanbanBoard.tsx` → Client component: DragDropContext, 4 columns, onDragEnd with fractional positionIndex
+`apps/web/components/board/KanbanColumn.tsx` → Client component: Droppable column with status header + task cards
+`apps/web/components/board/TaskCard.tsx` → Client component: Draggable task card with inline rename + delete
+`apps/web/components/board/AddTaskInline.tsx` → Client component: inline form to create a new task (appears in Inbox column)
