@@ -4,10 +4,10 @@
 
 ## Current State
 
-- **Phase:** API CRUD complete — Project & Task REST endpoints implemented, type-check passing.
+- **Phase:** Project list UI complete — CRUD interface for projects at `/`, SWR data layer, type-check passing.
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
-- **`apps/web/`:** Next.js 14.2 scaffold with Tailwind, landing page at `/`, `lib/api.ts` client.
+- **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), `useProjects` SWR hook, `lib/api.ts` client.
 - **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project & Task CRUD endpoints, Prisma client, Zod config.
 - **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`.
 - **Database:** PostgreSQL via local install. Prisma schema with 4 models, initial migration applied (`20260321183854_init`).
@@ -23,6 +23,7 @@
 | Project & Task services | DONE | `apps/api/src/services/event.service.ts`, `project.service.ts`, `task.service.ts` |
 | Project & Task routers | DONE | `apps/api/src/routers/projects.ts`, `tasks.ts` |
 | Frontend scaffold (Next.js) | DONE | `apps/web/app/layout.tsx`, `app/page.tsx`, `lib/api.ts`, `lib/utils.ts` |
+| Project list UI (CRUD) | DONE | `components/projects/ProjectList.tsx`, `ProjectCard.tsx`, `AddProjectForm.tsx`, `hooks/useProjects.ts` |
 | KanbanBoard + DnD | NOT STARTED | `apps/web/components/board/` |
 | Agent tools layer | NOT STARTED | `apps/api/src/agent/tools.ts` |
 | Agent coordinator + SSE | NOT STARTED | `apps/api/src/agent/coordinator.ts`, `routers/agent.ts` |
@@ -94,9 +95,13 @@
 `apps/web/.env.example` → Frontend env template
 `apps/web/app/layout.tsx` → Root layout (HTML, body, Tailwind globals)
 `apps/web/app/globals.css` → Tailwind directives
-`apps/web/app/page.tsx` → Landing page
+`apps/web/app/page.tsx` → Projects landing page (server component, fetches initial data)
 `apps/web/lib/utils.ts` → cn() utility (clsx + tailwind-merge)
 `apps/web/lib/api.ts` → Centralized API client (get, post, patch, delete)
+`apps/web/hooks/useProjects.ts` → SWR hook for project CRUD (list, add, rename, delete) with optimistic updates
+`apps/web/components/projects/ProjectList.tsx` → Client component: renders project list with add form and cards
+`apps/web/components/projects/ProjectCard.tsx` → Client component: project card with inline rename, delete, link to board
+`apps/web/components/projects/AddProjectForm.tsx` → Client component: form to create a new project
 `apps/api/src/services/event.service.ts` → logEvent(projectId, action, taskId?) — writes to Event table
 `apps/api/src/services/project.service.ts` → listProjects, createProject, updateProject, deleteProject
 `apps/api/src/services/task.service.ts` → listTasks, createTask (positionIndex auto), updateTask, deleteTask, reorderTask
