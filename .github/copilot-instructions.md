@@ -2,7 +2,7 @@
 
 AI-powered Kanban board. TypeScript monorepo: Next.js 14 frontend, Hono API, shared types. User types a goal → AI agent creates tasks on the board via SSE streaming.
 
-> **Read `.github/context.md` before generating code.** It tracks current project state, build progress, installed dependencies, and the file index. Update it after creating files, adding dependencies, or completing milestones.
+> **Read `.github/context.md` before analyze codebase and generating code.** It tracks current project state, build progress, installed dependencies, and the file index. Update it after creating files, adding dependencies, or completing milestones.
 
 ## Architecture Rules
 
