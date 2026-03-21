@@ -1,0 +1,52 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    // ─── API (Hono / Node.js ESM + tsx) ────────────────────────────────────
+    {
+      "name": "Debug: API",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--import", "tsx/esm"],
+      "program": "${workspaceFolder}/apps/api/src/index.ts",
+      "cwd": "${workspaceFolder}/apps/api",
+      "envFile": "${workspaceFolder}/apps/api/.env",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "outFiles": ["${workspaceFolder}/apps/api/**/*.js", "!**/node_modules/**"],
+      "presentation": { "group": "api" }
+    },
+    // ─── Next.js server-side ────────────────────────────────────────────────
+    {
+      "name": "Debug: Web (server-side)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/apps/web",
+      "serverReadyAction": {
+        "pattern": "- Local:.+(https?://.+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      },
+      "presentation": { "group": "web" }
+    },
+    // ─── Next.js client-side (Chrome) ───────────────────────────────────────
+    {
+      "name": "Debug: Web (Chrome client-side)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/apps/web",
+      "sourceMaps": true,
+      "presentation": { "group": "web" }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug: Full Stack",
+      "configurations": ["Debug: API", "Debug: Web (server-side)"],
+      "stopAll": true,
+      "presentation": { "order": 1 }
+    }
+  ]
+}

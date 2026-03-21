@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install: all dependencies",
+      "type": "shell",
+      "command": "npm install",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "DB: migrate dev",
+      "type": "shell",
+      "command": "npx prisma migrate dev",
+      "options": {
+        "cwd": "${workspaceFolder}/apps/api",
+        "env": { "DATABASE_URL": "postgresql://postgres:postgres@host.docker.internal:5432/kanban-architect" }
+      },
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "DB: generate client",
+      "type": "shell",
+      "command": "npx prisma generate",
+      "options": { "cwd": "${workspaceFolder}/apps/api" },
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "DB: studio",
+      "type": "shell",
+      "command": "npx prisma studio",
+      "options": { "cwd": "${workspaceFolder}/apps/api" },
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Build: types package",
+      "type": "shell",
+      "command": "npx tsc -b",
+      "options": { "cwd": "${workspaceFolder}/packages/types" },
+      "group": "build",
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    }
+  ]
+}
