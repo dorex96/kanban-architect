@@ -1,6 +1,7 @@
 {
   "name": "kanban-architect",
   "private": true,
+  "license": "Apache-2.0",
   "packageManager": "npm@11.10.0",
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
