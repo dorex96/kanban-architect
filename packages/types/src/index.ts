@@ -13,8 +13,20 @@ export interface Task {
 export interface CreateTaskInput {
   projectId: string;
   title: string;
-  description: string;
+  description?: string;
 }
+
+export interface UpdateTaskInput {
+  title?: string;
+  description?: string;
+  status?: TaskStatus;
+}
+
+export interface UpdateProjectInput {
+  name: string;
+}
+
+export type Board = Record<TaskStatus, Task[]>;
 
 export interface ToolCallResult {
   success: boolean;

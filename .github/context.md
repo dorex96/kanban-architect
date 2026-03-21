@@ -4,12 +4,12 @@
 
 ## Current State
 
-- **Phase:** Dev environment ready — scaffolding complete, all builds pass, dev servers run.
+- **Phase:** API CRUD complete — Project & Task REST endpoints implemented, type-check passing.
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
 - **`apps/web/`:** Next.js 14.2 scaffold with Tailwind, landing page at `/`, `lib/api.ts` client.
-- **`apps/api/`:** Hono scaffold with CORS, `GET /health` endpoint, Prisma client, Zod config.
-- **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`.
+- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project & Task CRUD endpoints, Prisma client, Zod config.
+- **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`.
 - **Database:** PostgreSQL via local install. Prisma schema with 4 models, initial migration applied (`20260321183854_init`).
 
 ## Build Progress
@@ -20,8 +20,8 @@
 | Shared types package | DONE | `packages/types/src/index.ts`, `packages/types/package.json` |
 | Prisma schema + migrations | DONE | `apps/api/prisma/schema.prisma`, `apps/api/prisma/migrations/` |
 | API scaffold (Hono entry) | DONE | `apps/api/src/index.ts`, `config.ts`, `lib/prisma.ts`, `lib/errors.ts` |
-| Project & Task services | NOT STARTED | `apps/api/src/services/` |
-| Project & Task routers | NOT STARTED | `apps/api/src/routers/` |
+| Project & Task services | DONE | `apps/api/src/services/event.service.ts`, `project.service.ts`, `task.service.ts` |
+| Project & Task routers | DONE | `apps/api/src/routers/projects.ts`, `tasks.ts` |
 | Frontend scaffold (Next.js) | DONE | `apps/web/app/layout.tsx`, `app/page.tsx`, `lib/api.ts`, `lib/utils.ts` |
 | KanbanBoard + DnD | NOT STARTED | `apps/web/components/board/` |
 | Agent tools layer | NOT STARTED | `apps/api/src/agent/tools.ts` |
@@ -49,6 +49,7 @@
 | `zod` | `apps/api` | ^3.24.0 | Validation |
 | `ai`, `@ai-sdk/openai`, `@ai-sdk/anthropic` | `apps/api` | ^4.1.0, ^1.1.0 | `streamText` + provider models |
 | `tsx` | `apps/api` | ^4.19.0 | Dev runner |
+| `@hono/zod-validator` | `apps/api` | ^0.4.x | Zod request validation middleware |
 
 ## Active Decisions
 
@@ -96,3 +97,8 @@
 `apps/web/app/page.tsx` → Landing page
 `apps/web/lib/utils.ts` → cn() utility (clsx + tailwind-merge)
 `apps/web/lib/api.ts` → Centralized API client (get, post, patch, delete)
+`apps/api/src/services/event.service.ts` → logEvent(projectId, action, taskId?) — writes to Event table
+`apps/api/src/services/project.service.ts` → listProjects, createProject, updateProject, deleteProject
+`apps/api/src/services/task.service.ts` → listTasks, createTask (positionIndex auto), updateTask, deleteTask, reorderTask
+`apps/api/src/routers/projects.ts` → GET/POST/PATCH/DELETE /projects (Zod-validated)
+`apps/api/src/routers/tasks.ts` → GET/POST/PATCH/DELETE /tasks + PATCH /tasks/:id/reorder (Zod-validated)
