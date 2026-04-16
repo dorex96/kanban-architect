@@ -4,13 +4,13 @@
 
 ## Current State
 
-- **Phase:** Kanban board UI complete — project list at `/`, board view at `/board/[projectId]` with 4-column Kanban (INBOX/TODO/IN_PROGRESS/DONE), task CRUD (add/rename/delete), drag-and-drop to move tasks between columns, type-check passing.
+- **Phase:** Agent chat sidebar complete — streaming `POST /agent/run` endpoint (useChat-compatible), multi-turn conversation with DB-persisted chat history, `AgentSidebar` with `ThoughtProcess` tool-call visualization, board auto-revalidation after agent actions.
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
-- **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), board view at `/board/[projectId]` with DnD columns, `useProjects` + `useBoard` SWR hooks, `lib/api.ts` client.
-- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Prisma client, Zod config. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
+- **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), board view at `/board/[projectId]` with DnD columns, `useProjects` + `useBoard` SWR hooks, `lib/api.ts` client. Agent chat sidebar via `BoardWithSidebar` + `AgentSidebar` + `AgentMessage` + `ThoughtProcess` components, using `useChat` from `@ai-sdk/react`.
+- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Agent streaming endpoint (`POST /agent/run` with useChat-compatible messages format), chat history endpoints (`GET/DELETE /agent/messages`), agent logs (`GET /agent/logs`), Prisma client, Zod config. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
 - **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`.
-- **Database:** PostgreSQL via local install. Prisma schema with 4 models, initial migration applied (`20260321183854_init`).
+- **Database:** PostgreSQL via local install. Prisma schema with 5 models (Project, Task, Event, AgentLog, ChatMessage), migrations applied.
 - **README:** Includes a clear "Project Status: Work in Progress" section for public-repo expectations.
 
 ## Build Progress
@@ -26,9 +26,10 @@
 | Frontend scaffold (Next.js) | DONE | `apps/web/app/layout.tsx`, `app/page.tsx`, `lib/api.ts`, `lib/utils.ts` |
 | Project list UI (CRUD) | DONE | `components/projects/ProjectList.tsx`, `ProjectCard.tsx`, `AddProjectForm.tsx`, `hooks/useProjects.ts` |
 | KanbanBoard + DnD | DONE | `apps/web/app/board/[projectId]/page.tsx`, `components/board/KanbanBoard.tsx`, `KanbanColumn.tsx`, `TaskCard.tsx`, `AddTaskInline.tsx`, `hooks/useBoard.ts` |
-| Agent tools layer | NOT STARTED | `apps/api/src/features/agent/agent.tools.ts` |
-| Agent coordinator + SSE | NOT STARTED | `apps/api/src/features/agent/agent.coordinator.ts`, `agent.router.ts` |
-| AgentSidebar + ThoughtProcess | NOT STARTED | `apps/web/components/agent/` |
+| Agent tools layer | DONE | `apps/api/src/features/agent/agent.tools.ts` |
+| Agent coordinator + SSE | DONE | `apps/api/src/features/agent/agent.coordinator.ts`, `agent.router.ts`, `agent.prompts.ts` |
+| Agent chat persistence | DONE | `apps/api/prisma/migrations/20260416230000_add_chat_messages/` |
+| AgentSidebar + ThoughtProcess | DONE | `apps/web/components/agent/AgentSidebar.tsx`, `AgentMessage.tsx`, `ThoughtProcess.tsx`, `components/board/BoardWithSidebar.tsx` |
 | Docker compose (working) | DONE | `docker-compose.yml` (PostgreSQL 16, optional — local PG used) |
 | Tests | NOT STARTED | `apps/api/tests/` |
 
@@ -119,3 +120,9 @@
 `apps/web/components/board/KanbanColumn.tsx` → Client component: Droppable column with status header + task cards
 `apps/web/components/board/TaskCard.tsx` → Client component: Draggable task card with inline rename + delete
 `apps/web/components/board/AddTaskInline.tsx` → Client component: inline form to create a new task (appears in Inbox column)
+`apps/web/components/board/BoardWithSidebar.tsx` → Client component: flex layout wrapper, manages sidebar open/close, integrates KanbanBoard + AgentSidebar
+`apps/web/components/agent/AgentSidebar.tsx` → Client component: chat sidebar with useChat, DB-persisted message history, SWR board revalidation
+`apps/web/components/agent/AgentMessage.tsx` → Client component: single chat bubble (user/assistant), renders ThoughtProcess for tool calls
+`apps/web/components/agent/ThoughtProcess.tsx` → Client component: expandable tool-call cards with status indicators, color-coded by tool type
+`apps/api/src/features/agent/agent.prompts.ts` → System prompt template builder (plain text, no logic)
+`apps/api/prisma/migrations/20260416230000_add_chat_messages/migration.sql` → Migration adding ChatMessage table for chat persistence
