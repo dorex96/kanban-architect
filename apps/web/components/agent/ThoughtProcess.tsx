@@ -39,6 +39,21 @@ function formatArgs(args: Record<string, unknown>): string {
     .join(', ');
 }
 
+function formatResult(result: Record<string, unknown>): string {
+  const { success, error, ...rest } = result;
+  const details = Object.entries(rest);
+  if (details.length === 0) return success ? 'Done' : 'Failed';
+  return details
+    .map(([key, value]) => {
+      if (typeof value === 'object' && value !== null) {
+        const obj = value as Record<string, unknown>;
+        return obj.title ? `${key}: "${obj.title}"` : `${key}: ${JSON.stringify(value).slice(0, 80)}`;
+      }
+      return `${key}: ${JSON.stringify(value)}`;
+    })
+    .join(', ');
+}
+
 export function ThoughtProcess({ toolInvocations }: ThoughtProcessProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -99,7 +114,7 @@ export function ThoughtProcess({ toolInvocations }: ThoughtProcessProps) {
                 {hasResult && result && (
                   <div className={cn('mt-1', isSuccess ? 'text-emerald-600' : 'text-red-600')}>
                     <span className="font-semibold">result:</span>{' '}
-                    {result.error ?? 'success'}
+                    {result.error ?? formatResult(result)}
                   </div>
                 )}
               </div>
