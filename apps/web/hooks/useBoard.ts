@@ -75,6 +75,22 @@ export function useBoard(projectId: string, fallbackTasks?: Task[]) {
     );
   }
 
+  async function updateDescription(id: string, description: string) {
+    const optimisticBoard = Object.fromEntries(
+      STATUSES.map((s) => [
+        s,
+        board[s].map((t) => (t.id === id ? { ...t, description } : t)),
+      ]),
+    ) as Board;
+    await mutate(
+      async () => {
+        await api.patch<Task>(`/tasks/${id}`, { description });
+        return optimisticBoard;
+      },
+      { optimisticData: optimisticBoard, rollbackOnError: true },
+    );
+  }
+
   async function deleteTask(id: string) {
     const optimisticBoard = Object.fromEntries(
       STATUSES.map((s) => [s, board[s].filter((t) => t.id !== id)]),
@@ -121,5 +137,5 @@ export function useBoard(projectId: string, fallbackTasks?: Task[]) {
     );
   }
 
-  return { board, isLoading, error, addTask, renameTask, deleteTask, moveTask };
+  return { board, isLoading, error, addTask, renameTask, updateDescription, deleteTask, moveTask };
 }

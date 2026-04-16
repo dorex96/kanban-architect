@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import type { Task, TaskStatus } from '@kanban/types';
 import { cn } from '@/lib/utils';
+import { TaskDetailModal } from './TaskDetailModal';
 
 const STATUS_CARD_BORDER: Record<TaskStatus, string> = {
   INBOX: 'border-l-stone-300',
@@ -15,11 +16,13 @@ interface TaskCardProps {
   task: Task;
   status: TaskStatus;
   onRename: (id: string, title: string) => Promise<void>;
+  onDescriptionUpdate: (id: string, description: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
 
-export function TaskCard({ task, status, onRename, onDelete }: TaskCardProps) {
+export function TaskCard({ task, status, onRename, onDescriptionUpdate, onDelete }: TaskCardProps) {
   const [editing, setEditing] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -70,18 +73,22 @@ export function TaskCard({ task, status, onRename, onDelete }: TaskCardProps) {
               {task.title}
             </button>
           )}
-          {task.description && (
-            <p className="mt-1 break-words line-clamp-2 text-xs text-stone-500">
-              {task.description}
-            </p>
-          )}
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <button
+            onClick={() => setShowDetail(true)}
+            className="rounded p-1 text-stone-400 transition-colors hover:bg-violet-50 hover:text-violet-500"
+            title="View details"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <button
             onClick={startEdit}
             className="rounded p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
-            title="Edit"
+            title="Rename"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
               <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
@@ -98,6 +105,26 @@ export function TaskCard({ task, status, onRename, onDelete }: TaskCardProps) {
           </button>
         </div>
       </div>
+
+      {task.description && (
+        <button
+          onClick={() => setShowDetail(true)}
+          className="mt-1 flex w-full items-center gap-1 text-left"
+          title="View details"
+        >
+          <p className="line-clamp-2 break-words text-xs text-stone-400">
+            {task.description}
+          </p>
+        </button>
+      )}
+
+      {showDetail && (
+        <TaskDetailModal
+          task={task}
+          onSave={(description) => onDescriptionUpdate(task.id, description)}
+          onClose={() => setShowDetail(false)}
+        />
+      )}
     </div>
   );
 }

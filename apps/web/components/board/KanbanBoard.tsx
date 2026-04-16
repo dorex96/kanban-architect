@@ -14,7 +14,7 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
-  const { board, addTask, renameTask, deleteTask, moveTask } = useBoard(
+  const { board, addTask, renameTask, updateDescription, deleteTask, moveTask } = useBoard(
     projectId,
     fallbackTasks,
   );
@@ -58,6 +58,7 @@ export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
             status={status}
             tasks={board[status]}
             onRename={renameTask}
+            onDescriptionUpdate={updateDescription}
             onDelete={deleteTask}
           >
             {status === 'INBOX' && <AddTaskInline onAdd={addTask} />}

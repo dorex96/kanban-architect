@@ -30,6 +30,7 @@ interface KanbanColumnProps {
   status: TaskStatus;
   tasks: Task[];
   onRename: (id: string, title: string) => Promise<void>;
+  onDescriptionUpdate: (id: string, description: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   children?: React.ReactNode;
 }
@@ -38,6 +39,7 @@ export function KanbanColumn({
   status,
   tasks,
   onRename,
+  onDescriptionUpdate,
   onDelete,
   children,
 }: KanbanColumnProps) {
@@ -79,6 +81,7 @@ export function KanbanColumn({
                       task={task}
                       status={status}
                       onRename={onRename}
+                      onDescriptionUpdate={onDescriptionUpdate}
                       onDelete={onDelete}
                     />
                   </div>
