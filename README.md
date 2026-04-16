@@ -32,10 +32,11 @@ Core Kanban features are implemented and usable, but the AI agent layer and auto
 
 ### Roadmap
 
-1. Implement agent tools and coordinator in API
+1. ~~Implement agent tools and coordinator in API~~
 2. Add streaming agent endpoint and frontend chat sidebar
-3. Add service and router tests
-4. Improve production readiness (validation, observability, deployment docs)
+3. Communicate with Kanban Architect via telegram
+4. Add service and router tests
+5. Improve production readiness (validation, observability, deployment docs)
 
 ## Architecture
 
