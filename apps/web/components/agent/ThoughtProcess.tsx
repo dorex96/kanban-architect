@@ -39,6 +39,21 @@ function formatArgs(args: Record<string, unknown>): string {
     .join(', ');
 }
 
+function isResultObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseResult(raw: unknown): { success: boolean; error?: string; data: Record<string, unknown> } {
+  if (!isResultObject(raw)) {
+    return { success: true, data: {} };
+  }
+  return {
+    success: raw.success !== false,
+    error: typeof raw.error === 'string' ? raw.error : undefined,
+    data: raw,
+  };
+}
+
 function formatResult(result: Record<string, unknown>): string {
   const { success, error, ...rest } = result;
   const details = Object.entries(rest);
@@ -78,8 +93,8 @@ export function ThoughtProcess({ toolInvocations }: ThoughtProcessProps) {
         const isExpanded = expandedIds.has(invocation.toolCallId);
         const isLoading = invocation.state === 'call' || invocation.state === 'partial-call';
         const hasResult = invocation.state === 'result';
-        const result = invocation.result as { success?: boolean; error?: string } | undefined;
-        const isSuccess = result?.success !== false;
+        const parsed = hasResult ? parseResult(invocation.result) : null;
+        const isSuccess = parsed ? parsed.success : true;
 
         return (
           <div
@@ -111,10 +126,10 @@ export function ThoughtProcess({ toolInvocations }: ThoughtProcessProps) {
                   <span className="font-semibold">args:</span>{' '}
                   {formatArgs(invocation.args)}
                 </div>
-                {hasResult && result && (
+                {hasResult && parsed && (
                   <div className={cn('mt-1', isSuccess ? 'text-emerald-600' : 'text-red-600')}>
                     <span className="font-semibold">result:</span>{' '}
-                    {result.error ?? formatResult(result)}
+                    {parsed.error ?? formatResult(parsed.data)}
                   </div>
                 )}
               </div>
