@@ -13,10 +13,17 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
-  INBOX: 'bg-gray-100 text-gray-700',
-  TODO: 'bg-blue-100 text-blue-700',
+  INBOX: 'bg-stone-100 text-stone-600',
+  TODO: 'bg-violet-100 text-violet-700',
   IN_PROGRESS: 'bg-amber-100 text-amber-700',
-  DONE: 'bg-green-100 text-green-700',
+  DONE: 'bg-emerald-100 text-emerald-700',
+};
+
+const STATUS_BORDER_COLORS: Record<TaskStatus, string> = {
+  INBOX: 'border-t-stone-300',
+  TODO: 'border-t-violet-400',
+  IN_PROGRESS: 'border-t-amber-400',
+  DONE: 'border-t-emerald-400',
 };
 
 interface KanbanColumnProps {
@@ -35,8 +42,8 @@ export function KanbanColumn({
   children,
 }: KanbanColumnProps) {
   return (
-    <div className="flex w-72 shrink-0 flex-col rounded-xl bg-gray-50">
-      <div className="flex items-center gap-2 px-3 py-3">
+    <div className={cn('flex w-72 shrink-0 flex-col rounded-xl border border-stone-200 border-t-2 bg-white shadow-sm', STATUS_BORDER_COLORS[status])}>
+      <div className="flex items-center gap-2 px-3 pt-3 pb-2">
         <span
           className={cn(
             'rounded-full px-2.5 py-0.5 text-xs font-semibold',
@@ -45,7 +52,7 @@ export function KanbanColumn({
         >
           {STATUS_LABELS[status]}
         </span>
-        <span className="text-xs text-gray-400">{tasks.length}</span>
+        <span className="ml-auto tabular-nums text-xs text-stone-400">{tasks.length}</span>
       </div>
 
       {children && <div className="px-2 pb-2">{children}</div>}
@@ -57,7 +64,7 @@ export function KanbanColumn({
             {...provided.droppableProps}
             className={cn(
               'flex min-h-[40px] flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2',
-              snapshot.isDraggingOver && 'bg-blue-50/50 rounded-lg',
+              snapshot.isDraggingOver && 'bg-violet-50/60 rounded-lg',
             )}
           >
             {tasks.map((task, index) => (
@@ -70,6 +77,7 @@ export function KanbanColumn({
                   >
                     <TaskCard
                       task={task}
+                      status={status}
                       onRename={onRename}
                       onDelete={onDelete}
                     />

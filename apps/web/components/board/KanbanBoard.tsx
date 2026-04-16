@@ -51,7 +51,7 @@ export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex h-full gap-4 overflow-x-auto p-6">
+      <div className="bg-board-canvas flex h-full gap-4 overflow-x-auto p-6">
         {STATUSES.map((status) => (
           <KanbanColumn
             key={status}

@@ -1,15 +1,24 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import type { Task } from '@kanban/types';
+import type { Task, TaskStatus } from '@kanban/types';
+import { cn } from '@/lib/utils';
+
+const STATUS_CARD_BORDER: Record<TaskStatus, string> = {
+  INBOX: 'border-l-stone-300',
+  TODO: 'border-l-violet-400',
+  IN_PROGRESS: 'border-l-amber-400',
+  DONE: 'border-l-emerald-400',
+};
 
 interface TaskCardProps {
   task: Task;
+  status: TaskStatus;
   onRename: (id: string, title: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
 
-export function TaskCard({ task, onRename, onDelete }: TaskCardProps) {
+export function TaskCard({ task, status, onRename, onDelete }: TaskCardProps) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,7 +48,7 @@ export function TaskCard({ task, onRename, onDelete }: TaskCardProps) {
   }
 
   return (
-    <div className="group rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
+    <div className={cn('group rounded-lg border border-stone-200 border-l-4 bg-white p-3 shadow-sm transition-all hover:-translate-y-px hover:shadow-md', STATUS_CARD_BORDER[status])}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           {editing ? (
@@ -50,19 +59,19 @@ export function TaskCard({ task, onRename, onDelete }: TaskCardProps) {
               onChange={(e) => setEditTitle(e.target.value)}
               onBlur={commitEdit}
               onKeyDown={handleKeyDown}
-              className="w-full rounded border border-blue-400 px-1.5 py-0.5 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded border border-violet-400 px-1.5 py-0.5 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
           ) : (
             <button
               onClick={startEdit}
-              className="w-full cursor-text break-all text-left text-sm font-medium text-gray-900"
+              className="w-full cursor-text break-words text-left text-sm font-medium text-stone-900"
               title="Click to edit"
             >
               {task.title}
             </button>
           )}
           {task.description && (
-            <p className="mt-1 break-all line-clamp-2 text-xs text-gray-500">
+            <p className="mt-1 break-words line-clamp-2 text-xs text-stone-500">
               {task.description}
             </p>
           )}
@@ -71,7 +80,7 @@ export function TaskCard({ task, onRename, onDelete }: TaskCardProps) {
         <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <button
             onClick={startEdit}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
             title="Edit"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -80,7 +89,7 @@ export function TaskCard({ task, onRename, onDelete }: TaskCardProps) {
           </button>
           <button
             onClick={() => onDelete(task.id)}
-            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+            className="rounded p-1 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500"
             title="Delete"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">

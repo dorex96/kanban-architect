@@ -31,13 +31,13 @@ export function AddTaskInline({ onAdd }: AddTaskInlineProps) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="New task title…"
-        className="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="min-w-0 flex-1 rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm shadow-sm placeholder:text-stone-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-500"
         disabled={submitting}
       />
       <button
         type="submit"
         disabled={submitting || !title.trim()}
-        className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitting ? 'Adding…' : 'Add'}
       </button>

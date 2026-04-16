@@ -11,8 +11,9 @@ export default async function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-12">
-      <h1 className="mb-8 text-3xl font-bold text-gray-900">Projects</h1>
+    <main className="mx-auto max-w-2xl px-4 py-16">
+      <h1 className="mb-1 text-2xl font-semibold tracking-tight text-stone-900">Projects</h1>
+      <p className="mb-8 text-sm text-stone-500">Your workspaces. Pick one to open its board.</p>
       <ProjectList fallbackData={projects} />
     </main>
   );
