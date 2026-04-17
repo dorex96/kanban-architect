@@ -7,7 +7,7 @@ TypeScript monorepo: **Next.js 14** frontend, **Hono** API, shared types.
 ## Project Status: Work in Progress
 
 This repository is public as a build-in-public project.
-Core Kanban features are implemented and usable, but the AI agent layer and automated tests are still in progress.
+Core Kanban and AI agent features are implemented and usable, while automated tests and production hardening are still in progress.
 
 ### What works now
 
@@ -16,26 +16,31 @@ Core Kanban features are implemented and usable, but the AI agent layer and auto
 - Task creation, rename, delete
 - Drag-and-drop reordering with fractional `positionIndex`
 - API with feature-based slices (`projects`, `tasks`, `events`)
+- Agent feature slice in API (`tools`, coordinator, SSE endpoint)
+- Agent chat sidebar in frontend (`AgentSidebar`, `ThoughtProcess`)
+- Multi-turn AI chat with persisted message history (`ChatMessage`)
+- Agent logs with tool calls (`AgentLog`)
+- LLM provider switching via `LLM_PROVIDER` (`openai | anthropic | ollama`)
 - Shared types package for frontend and backend
 
 ### Not finished yet
 
-- Agent feature slice in API (`tools`, `coordinator`, SSE endpoint)
-- Frontend agent UI (`AgentSidebar`, `ThoughtProcess`)
 - Automated tests (`tools`, `service`, and router tests)
+- Telegram integration
+- Production hardening (validation, observability, deployment docs)
 
 ### Current limitations
 
 - Not production-hardened yet
 - Test coverage is incomplete
-- AI workflow is not wired end-to-end
+- Telegram workflow is not implemented yet
 
 ### Roadmap
 
 1. ~~Implement agent tools and coordinator in API~~
-2. Add streaming agent endpoint and frontend chat sidebar
-3. Communicate with Kanban Architect via telegram
-4. Add service and router tests
+2. ~~Add streaming agent endpoint and frontend chat sidebar~~
+3. Add service and router tests
+4. Communicate with Kanban Architect via telegram
 5. Improve production readiness (validation, observability, deployment docs)
 
 ## Architecture
@@ -48,7 +53,7 @@ packages/types/    → Shared TS interfaces (@kanban/types)
 
 ### Database
 
-PostgreSQL with four tables:
+PostgreSQL with five tables:
 
 | Table | Purpose |
 |---|---|
@@ -56,6 +61,7 @@ PostgreSQL with four tables:
 | **Tasks** | Cards with status (`INBOX`, `TODO`, `IN_PROGRESS`, `DONE`) and fractional `positionIndex` |
 | **Events** | Audit log for all mutations |
 | **AgentLogs** | AI agent queries, reasoning, and tool calls |
+| **ChatMessages** | Persisted user/assistant chat history per project |
 
 ## Prerequisites
 
@@ -121,7 +127,17 @@ For AI features, also set in `apps/api/.env`:
 LLM_PROVIDER=openai          # openai | anthropic | ollama
 OPENAI_API_KEY=sk-...        # if using OpenAI
 ANTHROPIC_API_KEY=sk-ant-... # if using Anthropic
+# OLLAMA uses local endpoint http://localhost:11434/v1
 ```
+
+### Agent API endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/agent/run` | Stream agent response via SSE (useChat compatible) |
+| `GET` | `/agent/messages?projectId=...` | Load persisted chat history |
+| `DELETE` | `/agent/messages?projectId=...` | Clear persisted chat history |
+| `GET` | `/agent/logs?projectId=...` | Load recent agent logs and tool calls |
 
 ### 4. Run database migrations
 
@@ -170,6 +186,7 @@ curl http://localhost:4000/health
 │   │   └── src/
 │   │       ├── common/
 │   │       ├── features/
+│   │       │   ├── agent/
 │   │       │   ├── events/
 │   │       │   ├── projects/
 │   │       │   └── tasks/
@@ -180,6 +197,7 @@ curl http://localhost:4000/health
 │       │   └── board/
 │       │       └── [projectId]/
 │       ├── components/
+│       │   ├── agent/
 │       │   ├── board/
 │       │   └── projects/
 │       ├── hooks/
