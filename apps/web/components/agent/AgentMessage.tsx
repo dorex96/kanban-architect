@@ -1,5 +1,7 @@
 'use client';
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
 import { ThoughtProcess } from './ThoughtProcess';
 
@@ -31,15 +33,22 @@ export function AgentMessage({ role, content, toolInvocations }: AgentMessagePro
         )}
       >
         {content && (
-          <div className="whitespace-pre-wrap break-words">{content}</div>
+          isUser ? (
+            <div className="whitespace-pre-wrap break-words">{content}</div>
+          ) : (
+            <div className="markdown text-sm">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            </div>
+          )
         )}
         {toolInvocations && toolInvocations.length > 0 && (
           <ThoughtProcess toolInvocations={toolInvocations} />
         )}
         {!content && (!toolInvocations || toolInvocations.length === 0) && (
-          <div className="flex items-center gap-1.5 text-stone-400">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-stone-300" />
-            <span className="text-xs">Thinking…</span>
+          <div className="flex items-center gap-2 py-1">
+            <span className="typing-dot h-2 w-2 rounded-full bg-stone-400" style={{ animationDelay: '0ms' }} />
+            <span className="typing-dot h-2 w-2 rounded-full bg-stone-400" style={{ animationDelay: '150ms' }} />
+            <span className="typing-dot h-2 w-2 rounded-full bg-stone-400" style={{ animationDelay: '300ms' }} />
           </div>
         )}
       </div>

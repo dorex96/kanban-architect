@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import type { Message } from '@ai-sdk/react';
 import { useSWRConfig } from 'swr';
@@ -13,6 +13,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 interface AgentSidebarProps {
   projectId: string;
   onClose: () => void;
+  isOpen: boolean;
 }
 
 interface PersistedMessage {
@@ -21,7 +22,7 @@ interface PersistedMessage {
   content: string;
 }
 
-export function AgentSidebar({ projectId, onClose }: AgentSidebarProps) {
+export function AgentSidebar({ projectId, onClose, isOpen }: AgentSidebarProps) {
   const { mutate } = useSWRConfig();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -95,12 +96,29 @@ export function AgentSidebar({ projectId, onClose }: AgentSidebarProps) {
     }
   }, [messages]);
 
-  // Focus input when sidebar opens
+  // Focus input when sidebar opens (with delay for slide transition)
   useEffect(() => {
-    if (!loadingHistory) {
-      inputRef.current?.focus();
+    if (isOpen && !loadingHistory) {
+      const timer = setTimeout(() => inputRef.current?.focus(), 300);
+      return () => clearTimeout(timer);
     }
-  }, [loadingHistory]);
+  }, [isOpen, loadingHistory]);
+
+  // Auto-resize textarea
+  const handleAutoResize = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
+  }, []);
+
+  // Reset textarea height when input is cleared (after submit)
+  useEffect(() => {
+    if (!input) {
+      const el = inputRef.current;
+      if (el) el.style.height = 'auto';
+    }
+  }, [input]);
 
   async function handleClearHistory() {
     try {
@@ -127,7 +145,7 @@ export function AgentSidebar({ projectId, onClose }: AgentSidebarProps) {
   const displayError = configError ?? (error ? error.message : null);
 
   return (
-    <div className="flex h-full w-96 shrink-0 flex-col border-l border-stone-200 bg-stone-50">
+    <div className="flex h-full flex-col border-l border-stone-200 bg-stone-50">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3">
         <div className="flex items-center gap-2">
@@ -212,11 +230,13 @@ export function AgentSidebar({ projectId, onClose }: AgentSidebarProps) {
             ref={inputRef}
             value={input}
             onChange={handleInputChange}
+            onInput={handleAutoResize}
             onKeyDown={handleKeyDown}
             placeholder="Describe a goal or ask about tasks…"
             rows={1}
             className={cn(
               'max-h-24 min-h-[38px] flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm',
+              'overflow-y-auto',
               'placeholder:text-stone-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400',
             )}
             disabled={isLoading || loadingHistory}

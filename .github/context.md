@@ -30,6 +30,7 @@
 | Agent coordinator + SSE | DONE | `apps/api/src/features/agent/agent.coordinator.ts`, `agent.router.ts`, `agent.prompts.ts` |
 | Agent chat persistence | DONE | `apps/api/prisma/migrations/20260416230000_add_chat_messages/` |
 | AgentSidebar + ThoughtProcess | DONE | `apps/web/components/agent/AgentSidebar.tsx`, `AgentMessage.tsx`, `ThoughtProcess.tsx`, `components/board/BoardWithSidebar.tsx` |
+| Chat UI improvements | DONE | Markdown rendering in agent messages, responsive sidebar (mobile overlay + desktop panel with slide transition), auto-resize textarea, typing indicator animation |
 | Docker compose (working) | DONE | `docker-compose.yml` (PostgreSQL 16, optional — local PG used) |
 | Tests | NOT STARTED | `apps/api/tests/` |
 
@@ -46,6 +47,8 @@
 | `swr` | `apps/web` | ^2.2.0 | Data fetching + optimistic updates |
 | `@hello-pangea/dnd` | `apps/web` | ^17.0.0 | Drag and drop |
 | `ai`, `@ai-sdk/react` | `apps/web` | ^4.1.0, ^1.1.0 | `useChat` for SSE streaming |
+| `react-markdown` | `apps/web` | ^9.x | Markdown rendering in agent messages |
+| `remark-gfm` | `apps/web` | ^4.x | GitHub-flavored markdown support |
 | `clsx`, `tailwind-merge` | `apps/web` | ^2.1.0, ^2.6.0 | `cn()` utility |
 | `hono`, `@hono/node-server` | `apps/api` | ^4.6.0, ^1.13.0 | HTTP framework |
 | `prisma`, `@prisma/client` | `apps/api` | ^6.2.0 (6.19.2) | ORM |

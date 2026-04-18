@@ -15,14 +15,38 @@ export function BoardWithSidebar({ projectId, fallbackTasks }: BoardWithSidebarP
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-full">
+    <div className="relative flex h-full">
       <div className="min-w-0 flex-1">
         <KanbanBoard projectId={projectId} fallbackTasks={fallbackTasks} />
       </div>
 
-      {sidebarOpen && (
-        <AgentSidebar projectId={projectId} onClose={() => setSidebarOpen(false)} />
-      )}
+      {/* Mobile backdrop */}
+      <div
+        className={cn(
+          'fixed inset-0 z-40 bg-black/30 transition-opacity duration-300 md:hidden',
+          sidebarOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
+        )}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      {/* Sidebar container — always rendered, hidden via transform */}
+      <div
+        className={cn(
+          // Mobile: fixed full-width overlay (sm: capped at 384px)
+          'fixed inset-y-0 right-0 z-50 w-full sm:w-96',
+          // Desktop: relative panel beside board
+          'md:relative md:inset-auto md:z-auto md:w-96 md:shrink-0',
+          // Slide transition
+          'transition-transform duration-300 ease-in-out',
+          sidebarOpen ? 'translate-x-0' : 'translate-x-full',
+        )}
+      >
+        <AgentSidebar
+          projectId={projectId}
+          onClose={() => setSidebarOpen(false)}
+          isOpen={sidebarOpen}
+        />
+      </div>
 
       {/* Floating toggle button (visible when sidebar is closed) */}
       {!sidebarOpen && (

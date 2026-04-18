@@ -10,6 +10,22 @@
   }
 }
 
+/* Typing indicator dots */
+@keyframes typingDot {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.typing-dot {
+  animation: typingDot 1.4s ease-in-out infinite;
+}
+
 @layer components {
   .markdown h1 { @apply text-xl font-bold text-stone-900 mt-5 mb-2; }
   .markdown h2 { @apply text-lg font-semibold text-stone-900 mt-4 mb-1.5; }
