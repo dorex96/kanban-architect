@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Project, Task } from '@kanban/types';
 import { api } from '@/lib/api';
-import { KanbanBoard } from '../../../components/board/KanbanBoard';
+import { BoardWithSidebar } from '../../../components/board/BoardWithSidebar';
 
 interface PageProps {
   params: { projectId: string };
@@ -40,7 +40,7 @@ export default async function BoardPage({ params }: PageProps) {
       </header>
 
       <div className="min-h-0 flex-1">
-        <KanbanBoard projectId={projectId} fallbackTasks={tasks} />
+        <BoardWithSidebar projectId={projectId} fallbackTasks={tasks} />
       </div>
     </main>
   );

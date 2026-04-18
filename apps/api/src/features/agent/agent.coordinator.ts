@@ -2,20 +2,30 @@ import { streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import type { LanguageModelV1 } from 'ai';
-import type { Task, TaskStatus, ToolCall } from '@kanban/types';
+import type { ToolCall } from '@kanban/types';
 import { config } from '../../config.js';
 import { prisma } from '../../lib/prisma.js';
 import { listTasks } from '../tasks/tasks.service.js';
 import { createAgentTools } from './agent.tools.js';
+import { buildSystemPrompt } from './agent.prompts.js';
 
-const STATUSES: TaskStatus[] = ['INBOX', 'TODO', 'IN_PROGRESS', 'DONE'];
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
 
 export function getModel(): LanguageModelV1 {
   switch (config.LLM_PROVIDER) {
     case 'openai':
+      if (!config.OPENAI_API_KEY) {
+        throw new ConfigurationError('OPENAI_API_KEY is not set. Add it to your .env file to use the OpenAI provider.');
+      }
       return createOpenAI({ apiKey: config.OPENAI_API_KEY })('gpt-4o');
     case 'anthropic':
-      return createAnthropic({ apiKey: config.ANTHROPIC_API_KEY })('claude-sonnet-4-20250514');
+      if (!config.ANTHROPIC_API_KEY) {
+        throw new ConfigurationError('ANTHROPIC_API_KEY is not set. Add it to your .env file to use the Anthropic provider.');
+      }
+      return createAnthropic({ apiKey: config.ANTHROPIC_API_KEY })(config.ANTHROPIC_MODEL);
     case 'ollama':
       return createOpenAI({
         baseURL: 'http://localhost:11434/v1',
@@ -24,60 +34,53 @@ export function getModel(): LanguageModelV1 {
   }
 }
 
-export function buildSystemPrompt(tasks: Task[]): string {
-  const grouped: Record<TaskStatus, Task[]> = {
-    INBOX: [],
-    TODO: [],
-    IN_PROGRESS: [],
-    DONE: [],
-  };
-  for (const task of tasks) {
-    grouped[task.status].push(task);
+export class ConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConfigurationError';
   }
-
-  let board = '';
-  for (const status of STATUSES) {
-    board += `\n### ${status}\n`;
-    const column = grouped[status];
-    if (column.length === 0) {
-      board += '_(empty)_\n';
-    } else {
-      for (const t of column) {
-        const desc = t.description ? ` — "${t.description.slice(0, 80)}"` : '';
-        board += `- [${t.id}] ${t.title} (pos: ${t.positionIndex})${desc}\n`;
-      }
-    }
-  }
-
-  return `You are a Kanban board assistant for project management.
-You can create, update, move, and delete tasks on the board using the provided tools.
-
-## Current Board State
-${board}
-## Rules
-- When moving tasks, use fractional positionIndex values (e.g. 1.5 to insert between 1.0 and 2.0).
-- Valid task statuses: INBOX, TODO, IN_PROGRESS, DONE.
-- Always confirm what you did after performing actions.
-- Use the task IDs shown in brackets when referencing tasks.`;
 }
 
-export async function runAgent({ projectId, query }: { projectId: string; query: string }) {
+export async function runAgent({
+  projectId,
+  messages,
+}: {
+  projectId: string;
+  messages: ChatMessage[];
+}) {
+  const model = getModel();
   const tasks = await listTasks(projectId);
   const systemPrompt = buildSystemPrompt(tasks);
   const tools = createAgentTools(projectId);
 
+  const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+
+  // Save the user message to DB
+  if (lastUserMessage) {
+    await prisma.chatMessage.create({
+      data: { projectId, role: 'user', content: lastUserMessage },
+    });
+  }
+
   const result = streamText({
-    model: getModel(),
+    model,
     system: systemPrompt,
-    prompt: query,
+    messages,
     tools,
     maxSteps: 5,
     onFinish: async ({ text, steps }) => {
+      // Save the assistant response to DB
+      if (text) {
+        await prisma.chatMessage.create({
+          data: { projectId, role: 'assistant', content: text },
+        });
+      }
+
       const toolCalls = extractToolCalls(steps);
       await prisma.agentLog.create({
         data: {
           projectId,
-          query,
+          query: lastUserMessage,
           reasoning: text,
           toolCalls: toolCalls as unknown as Parameters<typeof prisma.agentLog.create>[0]['data']['toolCalls'],
           status: 'success',
