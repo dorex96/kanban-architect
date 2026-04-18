@@ -23,26 +23,6 @@ Core Kanban and AI agent features are implemented and usable, while automated te
 - LLM provider switching via `LLM_PROVIDER` (`openai | anthropic | ollama`)
 - Shared types package for frontend and backend
 
-### Not finished yet
-
-- Automated tests (`tools`, `service`, and router tests)
-- Telegram integration
-- Production hardening (validation, observability, deployment docs)
-
-### Current limitations
-
-- Not production-hardened yet
-- Test coverage is incomplete
-- Telegram workflow is not implemented yet
-
-### Roadmap
-
-1. ~~Implement agent tools and coordinator in API~~
-2. ~~Add streaming agent endpoint and frontend chat sidebar~~
-3. Add service and router tests
-4. Communicate with Kanban Architect via telegram
-5. Improve production readiness (validation, observability, deployment docs)
-
 ## Architecture
 
 ```
