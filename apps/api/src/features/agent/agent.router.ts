@@ -28,7 +28,14 @@ router.post(
     const { projectId, messages } = c.req.valid('json');
     try {
       const result = await runAgent({ projectId, messages });
-      return result.toDataStreamResponse();
+      return result.toDataStreamResponse({
+        getErrorMessage: (error: unknown) => {
+          if (error instanceof Error) {
+            return error.message;
+          }
+          return 'Unexpected agent error';
+        },
+      });
     } catch (err) {
       if (err instanceof ConfigurationError) {
         return c.json({ error: err.message, code: 'CONFIGURATION_ERROR' }, 422);

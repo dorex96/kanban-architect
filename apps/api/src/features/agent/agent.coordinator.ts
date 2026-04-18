@@ -25,7 +25,7 @@ export function getModel(): LanguageModelV1 {
       if (!config.ANTHROPIC_API_KEY) {
         throw new ConfigurationError('ANTHROPIC_API_KEY is not set. Add it to your .env file to use the Anthropic provider.');
       }
-      return createAnthropic({ apiKey: config.ANTHROPIC_API_KEY })('claude-sonnet-4-20250514');
+      return createAnthropic({ apiKey: config.ANTHROPIC_API_KEY })(config.ANTHROPIC_MODEL);
     case 'ollama':
       return createOpenAI({
         baseURL: 'http://localhost:11434/v1',

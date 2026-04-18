@@ -8,7 +8,7 @@
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
 - **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), board view at `/board/[projectId]` with DnD columns, `useProjects` + `useBoard` SWR hooks, `lib/api.ts` client. Agent chat sidebar via `BoardWithSidebar` + `AgentSidebar` + `AgentMessage` + `ThoughtProcess` components, using `useChat` from `@ai-sdk/react`.
-- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Agent streaming endpoint (`POST /agent/run` with useChat-compatible messages format), chat history endpoints (`GET/DELETE /agent/messages`), agent logs (`GET /agent/logs`), Prisma client, Zod config. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
+- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Agent streaming endpoint (`POST /agent/run` with useChat-compatible messages format), chat history endpoints (`GET/DELETE /agent/messages`), agent logs (`GET /agent/logs`), Prisma client, Zod config. Streamed agent errors now return specific messages to the client (instead of generic text). **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
 - **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`.
 - **Database:** PostgreSQL via local install. Prisma schema with 5 models (Project, Task, Event, AgentLog, ChatMessage), migrations applied.
 - **README:** Includes a clear "Project Status: Work in Progress" section for public-repo expectations.
@@ -60,6 +60,7 @@
 - Using npm workspaces (not pnpm) with Node 22.
 - Local PostgreSQL (not Docker) for development. Docker Compose available as optional.
 - DB connection URL: `postgresql://postgres:postgres@host.docker.internal:5432/kanban-architect`
+- Anthropic model selection is configurable via `ANTHROPIC_MODEL` (default: `claude-3-5-sonnet-latest`).
 
 ## Known Issues
 

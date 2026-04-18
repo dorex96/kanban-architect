@@ -6,6 +6,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-3-5-sonnet-latest'),
 });
 
 export const config = envSchema.parse(process.env);
