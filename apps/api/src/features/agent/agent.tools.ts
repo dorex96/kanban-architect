@@ -8,6 +8,7 @@ import {
   reorderTask,
 } from '../tasks/tasks.service.js';
 import { listProjects, createProject } from '../projects/projects.service.js';
+import { createNotification } from '../notifications/notifications.service.js';
 
 const taskStatusEnum = z.enum(['INBOX', 'TODO', 'IN_PROGRESS', 'DONE']);
 
@@ -121,6 +122,24 @@ export function createAgentTools(projectId: string) {
         try {
           const project = await createProject(name);
           return { success: true as const, project };
+        } catch (err: unknown) {
+          return { success: false as const, error: (err as Error).message };
+        }
+      },
+    }),
+
+    send_notification: tool({
+      description:
+        'Send a notification or question to the user. Use this when you need user input, want to ask a follow-up question, or need to flag something important for their attention.',
+      parameters: z.object({
+        message: z
+          .string()
+          .describe('The notification message or question to display to the user'),
+      }),
+      execute: async ({ message }) => {
+        try {
+          const notification = await createNotification(projectId, message);
+          return { success: true as const, notificationId: notification.id };
         } catch (err: unknown) {
           return { success: false as const, error: (err as Error).message };
         }

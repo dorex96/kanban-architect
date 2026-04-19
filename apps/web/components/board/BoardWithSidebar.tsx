@@ -9,10 +9,22 @@ import { AgentSidebar } from '../agent/AgentSidebar';
 interface BoardWithSidebarProps {
   projectId: string;
   fallbackTasks: Task[];
+  sidebarOpen?: boolean;
+  onToggleSidebar?: (open: boolean) => void;
 }
 
-export function BoardWithSidebar({ projectId, fallbackTasks }: BoardWithSidebarProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+export function BoardWithSidebar({
+  projectId,
+  fallbackTasks,
+  sidebarOpen: controlledOpen,
+  onToggleSidebar,
+}: BoardWithSidebarProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const sidebarOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setSidebarOpen = (open: boolean) => {
+    if (onToggleSidebar) onToggleSidebar(open);
+    else setInternalOpen(open);
+  };
 
   return (
     <div className="relative flex h-full">

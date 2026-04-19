@@ -15,13 +15,14 @@ enum TaskStatus {
 }
 
 model Project {
-  id           String        @id @default(cuid())
-  name         String
-  createdAt    DateTime      @default(now())
-  tasks        Task[]
-  events       Event[]
-  agentLogs    AgentLog[]
-  chatMessages ChatMessage[]
+  id            String         @id @default(cuid())
+  name          String
+  createdAt     DateTime       @default(now())
+  tasks         Task[]
+  events        Event[]
+  agentLogs     AgentLog[]
+  chatMessages  ChatMessage[]
+  notifications Notification[]
 }
 
 model Task {
@@ -70,6 +71,19 @@ model ChatMessage {
   content   String
   createdAt DateTime @default(now())
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  projectId String
+  message   String
+  isRead    Boolean   @default(false)
+  reply     String?
+  repliedAt DateTime?
+  createdAt DateTime  @default(now())
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
 }

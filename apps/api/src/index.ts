@@ -5,6 +5,7 @@ import { errorHandler } from './middlewares/error-handler.js';
 import projectsRouter from './features/projects/projects.router.js';
 import tasksRouter from './features/tasks/tasks.router.js';
 import agentRouter from './features/agent/agent.router.js';
+import notificationsRouter from './features/notifications/notifications.router.js';
 
 const app = new Hono();
 
@@ -15,6 +16,7 @@ app.get('/health', (c) => c.json({ status: 'ok' }));
 app.route('/projects', projectsRouter);
 app.route('/tasks', tasksRouter);
 app.route('/agent', agentRouter);
+app.route('/notifications', notificationsRouter);
 
 app.onError(errorHandler);
 

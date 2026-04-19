@@ -56,6 +56,16 @@ export interface Project {
   createdAt: string;
 }
 
+export interface Notification {
+  id: string;
+  projectId: string;
+  message: string;
+  isRead: boolean;
+  reply: string | null;
+  repliedAt: string | null;
+  createdAt: string;
+}
+
 export interface Event {
   id: string;
   projectId: string;
