@@ -255,9 +255,9 @@ export function TaskDetailModal({ task, onSave, onUpdateMeta, onClose }: TaskDet
         </div>
 
         {/* Meta section */}
-        <div className="flex shrink-0 flex-wrap items-center gap-4 border-b border-stone-100 bg-stone-50/50 px-6 py-3">
+        <div className="flex shrink-0 flex-col gap-2 border-b border-stone-100 bg-stone-50/50 px-6 py-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-stone-400">Priorità</span>
+            <span className="text-xs font-medium text-stone-400">Priority</span>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((p) => (
                 <button
@@ -275,23 +275,25 @@ export function TaskDetailModal({ task, onSave, onUpdateMeta, onClose }: TaskDet
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-stone-400">Inizio</span>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => handleDateChange('startDate', e.target.value)}
-              className="rounded border border-stone-200 px-2 py-0.5 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-stone-400">Fine</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => handleDateChange('endDate', e.target.value)}
-              className="rounded border border-stone-200 px-2 py-0.5 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
-            />
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-stone-400">Start</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => handleDateChange('startDate', e.target.value)}
+                className="rounded border border-stone-200 px-2 py-0.5 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-stone-400">End</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => handleDateChange('endDate', e.target.value)}
+                className="rounded border border-stone-200 px-2 py-0.5 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-violet-400"
+              />
+            </div>
           </div>
         </div>
 
