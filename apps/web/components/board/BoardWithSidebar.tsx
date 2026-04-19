@@ -11,6 +11,7 @@ interface BoardWithSidebarProps {
   fallbackTasks: Task[];
   sidebarOpen?: boolean;
   onToggleSidebar?: (open: boolean) => void;
+  prefillInput?: string;
 }
 
 export function BoardWithSidebar({
@@ -18,6 +19,7 @@ export function BoardWithSidebar({
   fallbackTasks,
   sidebarOpen: controlledOpen,
   onToggleSidebar,
+  prefillInput,
 }: BoardWithSidebarProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const sidebarOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -57,6 +59,7 @@ export function BoardWithSidebar({
           projectId={projectId}
           onClose={() => setSidebarOpen(false)}
           isOpen={sidebarOpen}
+          initialInput={prefillInput}
         />
       </div>
 

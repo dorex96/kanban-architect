@@ -20,10 +20,21 @@ export function BoardPageClient({
   fallbackNotifications,
 }: BoardPageClientProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [prefillInput, setPrefillInput] = useState('');
+
+  const handleOpenSidebar = (prefill = '') => {
+    setSidebarOpen(true);
+    setPrefillInput(prefill);
+  };
+
+  const handleToggleSidebar = (open: boolean) => {
+    setSidebarOpen(open);
+    if (!open) setPrefillInput('');
+  };
 
   return (
     <main className="flex h-screen flex-col overflow-hidden">
-      <header className="flex shrink-0 items-center gap-3 border-b border-stone-200 bg-white/95 px-6 py-3 backdrop-blur-sm">
+      <header className="z-10 flex shrink-0 items-center gap-3 border-b border-stone-200 bg-white/95 px-6 py-3 backdrop-blur-sm">
         <Link
           href="/"
           className="rounded-md p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500"
@@ -38,7 +49,7 @@ export function BoardPageClient({
           <NotificationBell
             projectId={projectId}
             fallbackData={fallbackNotifications}
-            onOpenSidebar={() => setSidebarOpen(true)}
+            onOpenSidebar={handleOpenSidebar}
           />
         </div>
       </header>
@@ -48,7 +59,8 @@ export function BoardPageClient({
           projectId={projectId}
           fallbackTasks={fallbackTasks}
           sidebarOpen={sidebarOpen}
-          onToggleSidebar={setSidebarOpen}
+          onToggleSidebar={handleToggleSidebar}
+          prefillInput={prefillInput}
         />
       </div>
     </main>

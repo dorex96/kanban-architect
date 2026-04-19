@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Notification } from '@kanban/types';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationPanel } from './NotificationPanel';
@@ -9,11 +10,11 @@ import { NotificationModal } from './NotificationModal';
 interface NotificationBellProps {
   projectId: string;
   fallbackData?: Notification[];
-  onOpenSidebar: () => void;
+  onOpenSidebar: (prefill?: string) => void;
 }
 
 export function NotificationBell({ projectId, fallbackData, onOpenSidebar }: NotificationBellProps) {
-  const { notifications, unreadCount, markAsRead, replyToNotification } = useNotifications(
+  const { notifications, unreadCount, markAsRead } = useNotifications(
     projectId,
     fallbackData,
   );
@@ -50,13 +51,13 @@ export function NotificationBell({ projectId, fallbackData, onOpenSidebar }: Not
         />
       )}
 
-      {selected && (
+      {selected && createPortal(
         <NotificationModal
           notification={selected}
           onClose={() => setSelected(null)}
-          onReply={replyToNotification}
           onOpenSidebar={onOpenSidebar}
-        />
+        />,
+        document.body,
       )}
     </div>
   );

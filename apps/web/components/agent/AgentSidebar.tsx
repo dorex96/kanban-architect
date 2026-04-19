@@ -14,6 +14,7 @@ interface AgentSidebarProps {
   projectId: string;
   onClose: () => void;
   isOpen: boolean;
+  initialInput?: string;
 }
 
 interface PersistedMessage {
@@ -22,7 +23,7 @@ interface PersistedMessage {
   content: string;
 }
 
-export function AgentSidebar({ projectId, onClose, isOpen }: AgentSidebarProps) {
+export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: AgentSidebarProps) {
   const { mutate } = useSWRConfig();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -65,6 +66,7 @@ export function AgentSidebar({ projectId, onClose, isOpen }: AgentSidebarProps) 
     isLoading,
     error,
     setMessages,
+    setInput,
   } = useChat({
     api: `${API_BASE}/agent/run`,
     body: { projectId },
@@ -103,6 +105,11 @@ export function AgentSidebar({ projectId, onClose, isOpen }: AgentSidebarProps) 
       return () => clearTimeout(timer);
     }
   }, [isOpen, loadingHistory]);
+
+  // Pre-fill input when opened from a notification reply
+  useEffect(() => {
+    if (initialInput) setInput(initialInput);
+  }, [initialInput, setInput]);
 
   // Auto-resize textarea
   const handleAutoResize = useCallback(() => {
