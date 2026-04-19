@@ -41,6 +41,9 @@ export function useBoard(projectId: string, fallbackTasks?: Task[]) {
       description: '',
       status: 'INBOX',
       positionIndex: (board.INBOX.at(-1)?.positionIndex ?? 0) + 1,
+      priority: 3,
+      startDate: null,
+      endDate: null,
       createdAt: new Date().toISOString(),
     };
     const optimisticBoard = {
@@ -137,5 +140,21 @@ export function useBoard(projectId: string, fallbackTasks?: Task[]) {
     );
   }
 
-  return { board, isLoading, error, addTask, renameTask, updateDescription, deleteTask, moveTask };
+  async function updateTask(id: string, data: { priority?: number; startDate?: string | null; endDate?: string | null }) {
+    const optimisticBoard = Object.fromEntries(
+      STATUSES.map((s) => [
+        s,
+        board[s].map((t) => (t.id === id ? { ...t, ...data } : t)),
+      ]),
+    ) as Board;
+    await mutate(
+      async () => {
+        await api.patch<Task>(`/tasks/${id}`, data);
+        return optimisticBoard;
+      },
+      { optimisticData: optimisticBoard, rollbackOnError: true },
+    );
+  }
+
+  return { board, isLoading, error, addTask, renameTask, updateDescription, deleteTask, moveTask, updateTask };
 }

@@ -7,6 +7,9 @@ export interface Task {
   description: string;
   status: TaskStatus;
   positionIndex: number;
+  priority: number;
+  startDate: string | null;
+  endDate: string | null;
   createdAt: string;
 }
 
@@ -14,12 +17,18 @@ export interface CreateTaskInput {
   projectId: string;
   title: string;
   description?: string;
+  priority?: number;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export interface UpdateTaskInput {
   title?: string;
   description?: string;
   status?: TaskStatus;
+  priority?: number;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export interface UpdateProjectInput {

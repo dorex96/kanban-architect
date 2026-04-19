@@ -32,6 +32,7 @@ interface KanbanColumnProps {
   onRename: (id: string, title: string) => Promise<void>;
   onDescriptionUpdate: (id: string, description: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onUpdate: (id: string, data: { priority?: number; startDate?: string | null; endDate?: string | null }) => Promise<void>;
   children?: React.ReactNode;
 }
 
@@ -41,6 +42,7 @@ export function KanbanColumn({
   onRename,
   onDescriptionUpdate,
   onDelete,
+  onUpdate,
   children,
 }: KanbanColumnProps) {
   return (
@@ -83,6 +85,7 @@ export function KanbanColumn({
                       onRename={onRename}
                       onDescriptionUpdate={onDescriptionUpdate}
                       onDelete={onDelete}
+                      onUpdate={onUpdate}
                     />
                   </div>
                 )}

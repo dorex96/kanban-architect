@@ -12,15 +12,28 @@ const STATUS_CARD_BORDER: Record<TaskStatus, string> = {
   DONE: 'border-l-emerald-400',
 };
 
+const PRIORITY_BADGE: Record<number, string> = {
+  1: 'bg-red-100 text-red-700',
+  2: 'bg-orange-100 text-orange-700',
+  3: 'bg-yellow-100 text-yellow-700',
+  4: 'bg-blue-100 text-blue-700',
+  5: 'bg-stone-100 text-stone-500',
+};
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+}
+
 interface TaskCardProps {
   task: Task;
   status: TaskStatus;
   onRename: (id: string, title: string) => Promise<void>;
   onDescriptionUpdate: (id: string, description: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onUpdate: (id: string, data: { priority?: number; startDate?: string | null; endDate?: string | null }) => Promise<void>;
 }
 
-export function TaskCard({ task, status, onRename, onDescriptionUpdate, onDelete }: TaskCardProps) {
+export function TaskCard({ task, status, onRename, onDescriptionUpdate, onDelete, onUpdate }: TaskCardProps) {
   const [editing, setEditing] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
@@ -49,6 +62,9 @@ export function TaskCard({ task, status, onRename, onDescriptionUpdate, onDelete
       setEditTitle(task.title);
     }
   }
+
+  const priorityBadgeClass = PRIORITY_BADGE[task.priority] ?? PRIORITY_BADGE[3];
+  const hasDate = task.startDate || task.endDate;
 
   return (
     <div className={cn('group rounded-lg border border-stone-200 border-l-4 bg-white p-3 shadow-sm transition-all hover:-translate-y-px hover:shadow-md', STATUS_CARD_BORDER[status])}>
@@ -118,10 +134,24 @@ export function TaskCard({ task, status, onRename, onDescriptionUpdate, onDelete
         </button>
       )}
 
+      <div className="mt-2 flex items-center gap-2">
+        <span className={cn('rounded px-1.5 py-0.5 text-xs font-semibold', priorityBadgeClass)}>
+          P{task.priority}
+        </span>
+        {hasDate && (
+          <span className="text-xs text-stone-400">
+            {task.startDate && formatDate(task.startDate)}
+            {task.startDate && task.endDate && ' → '}
+            {task.endDate && formatDate(task.endDate)}
+          </span>
+        )}
+      </div>
+
       {showDetail && (
         <TaskDetailModal
           task={task}
           onSave={(description) => onDescriptionUpdate(task.id, description)}
+          onUpdateMeta={(data) => onUpdate(task.id, data)}
           onClose={() => setShowDetail(false)}
         />
       )}

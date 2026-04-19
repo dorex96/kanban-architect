@@ -32,8 +32,8 @@ router.post(
   '/',
   zValidator('json', createTaskSchema),
   async (c) => {
-    const { projectId, title, description } = c.req.valid('json');
-    const task = await createTask(projectId, title, description);
+    const { projectId, title, description, priority, startDate, endDate } = c.req.valid('json');
+    const task = await createTask(projectId, title, description, priority, startDate, endDate);
     return c.json(task, 201);
   },
 );

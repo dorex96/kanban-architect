@@ -32,6 +32,9 @@ model Task {
   description   String     @default("")
   status        TaskStatus @default(INBOX)
   positionIndex Float      @default(0)
+  priority      Int        @default(3)
+  startDate     DateTime?
+  endDate       DateTime?
   createdAt     DateTime   @default(now())
   project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   events        Event[]
