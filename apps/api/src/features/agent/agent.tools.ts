@@ -11,6 +11,8 @@ import { listProjects, createProject } from '../projects/projects.service.js';
 import { createNotification } from '../notifications/notifications.service.js';
 
 const taskStatusEnum = z.enum(['INBOX', 'TODO', 'IN_PROGRESS', 'DONE']);
+const taskPrioritySchema = z.number().int().min(1).max(5);
+const taskDateSchema = z.string().datetime().nullable();
 
 export function createAgentTools(projectId: string) {
   return {
@@ -28,14 +30,25 @@ export function createAgentTools(projectId: string) {
     }),
 
     create_task: tool({
-      description: 'Create a new task in the INBOX column.',
+      description:
+        'Create a new task in the INBOX column. You can optionally set priority and ISO datetime schedule fields.',
       parameters: z.object({
         title: z.string().describe('Title of the task'),
         description: z.string().optional().describe('Optional task description'),
+        priority: taskPrioritySchema.optional().describe('Optional priority from 1 (highest) to 5 (lowest)'),
+        startDate: taskDateSchema.optional().describe('Optional ISO datetime start date, or null to leave unset'),
+        endDate: taskDateSchema.optional().describe('Optional ISO datetime end date, or null to leave unset'),
       }),
-      execute: async ({ title, description }) => {
+      execute: async ({ title, description, priority, startDate, endDate }) => {
         try {
-          const task = await createTask(projectId, title, description);
+          const task = await createTask(
+            projectId,
+            title,
+            description,
+            priority,
+            startDate,
+            endDate,
+          );
           return { success: true as const, task };
         } catch (err: unknown) {
           return { success: false as const, error: (err as Error).message };
@@ -45,19 +58,25 @@ export function createAgentTools(projectId: string) {
 
     update_task: tool({
       description:
-        'Update a task\'s title, description, or status. Provide only the fields to change.',
+        'Update a task\'s title, description, status, priority, or schedule. Provide only the fields to change and use null to clear dates.',
       parameters: z.object({
         taskId: z.string().describe('ID of the task to update'),
         title: z.string().optional().describe('New title'),
         description: z.string().optional().describe('New description'),
         status: taskStatusEnum.optional().describe('New status column'),
+        priority: taskPrioritySchema.optional().describe('New priority from 1 (highest) to 5 (lowest)'),
+        startDate: taskDateSchema.optional().describe('New ISO datetime start date, or null to clear it'),
+        endDate: taskDateSchema.optional().describe('New ISO datetime end date, or null to clear it'),
       }),
-      execute: async ({ taskId, title, description, status }) => {
+      execute: async ({ taskId, title, description, status, priority, startDate, endDate }) => {
         try {
           const data: Record<string, unknown> = {};
           if (title !== undefined) data.title = title;
           if (description !== undefined) data.description = description;
           if (status !== undefined) data.status = status;
+          if (priority !== undefined) data.priority = priority;
+          if (startDate !== undefined) data.startDate = startDate;
+          if (endDate !== undefined) data.endDate = endDate;
           const task = await updateTask(taskId, data as Parameters<typeof updateTask>[1]);
           return { success: true as const, task };
         } catch (err: unknown) {

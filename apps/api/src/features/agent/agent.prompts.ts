@@ -2,6 +2,16 @@ import type { Task, TaskStatus } from '@kanban/types';
 
 const STATUSES: TaskStatus[] = ['INBOX', 'TODO', 'IN_PROGRESS', 'DONE'];
 
+function formatTaskMetadata(task: Task): string {
+  const metadata = [
+    `priority: P${task.priority}`,
+    `start: ${task.startDate ?? 'unset'}`,
+    `end: ${task.endDate ?? 'unset'}`,
+  ];
+
+  return metadata.join(', ');
+}
+
 export function buildSystemPrompt(tasks: Task[]): string {
   const grouped: Record<TaskStatus, Task[]> = {
     INBOX: [],
@@ -22,7 +32,7 @@ export function buildSystemPrompt(tasks: Task[]): string {
     } else {
       for (const t of column) {
         const desc = t.description ? ` — "${t.description.slice(0, 80)}"` : '';
-        board += `- [${t.id}] ${t.title} (pos: ${t.positionIndex})${desc}\n`;
+        board += `- [${t.id}] ${t.title} (pos: ${t.positionIndex}; ${formatTaskMetadata(t)})${desc}\n`;
       }
     }
   }
@@ -37,6 +47,9 @@ ${board}
 - Do not create tasks that duplicate existing ones — check titles in the board state above.
 - When moving tasks, use fractional positionIndex values (e.g. 1.5 to insert between 1.0 and 2.0).
 - Valid task statuses: INBOX, TODO, IN_PROGRESS, DONE.
+- Use ISO datetime strings when setting startDate or endDate in tool calls.
+- Update priority, startDate, and endDate when the user asks to schedule, reschedule, prioritize, or clear timing information.
+- Leave fields unchanged unless the user asked to change them.
 - Always confirm what you did after performing actions.
 - Use the task IDs shown in brackets when referencing tasks.
 - Do not invent external integrations or services that are not mentioned by the user.`;
