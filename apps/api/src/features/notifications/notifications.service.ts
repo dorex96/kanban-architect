@@ -9,6 +9,22 @@ export async function createNotification(projectId: string, message: string): Pr
   return toNotification(row);
 }
 
+export async function hasRecentNotification(
+  projectId: string,
+  message: string,
+  since: Date,
+): Promise<boolean> {
+  const row = await prisma.notification.findFirst({
+    where: {
+      projectId,
+      message,
+      createdAt: { gte: since },
+    },
+    select: { id: true },
+  });
+  return Boolean(row);
+}
+
 export async function listNotifications(projectId: string): Promise<Notification[]> {
   const rows = await prisma.notification.findMany({
     where: { projectId },

@@ -4,11 +4,11 @@
 
 ## Current State
 
-- **Phase:** Agent chat sidebar complete — streaming `POST /agent/run` endpoint (useChat-compatible), multi-turn conversation with DB-persisted chat history, `AgentSidebar` with `ThoughtProcess` tool-call visualization, board auto-revalidation after agent actions.
+- **Phase:** Deterministic task-health monitoring in progress — env-toggled in-app scheduler checks deadline/workload signals and writes deduplicated notifications, with an internal run-once endpoint for verification.
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
 - **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), board view at `/board/[projectId]` with DnD columns, `useProjects` + `useBoard` SWR hooks, `lib/api.ts` client. Agent chat sidebar via `BoardWithSidebar` + `AgentSidebar` + `AgentMessage` + `ThoughtProcess` components, using `useChat` from `@ai-sdk/react`.
-- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Agent streaming endpoint (`POST /agent/run` with useChat-compatible messages format), chat history endpoints (`GET/DELETE /agent/messages`), agent logs (`GET /agent/logs`), Prisma client, Zod config. Streamed agent errors now return specific messages to the client (instead of generic text). Agent tools and system prompt now expose task `priority`, `startDate`, and `endDate`, so the AI can read, set, reschedule, and clear task timing metadata. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
+- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Agent streaming endpoint (`POST /agent/run` with useChat-compatible messages format), chat history endpoints (`GET/DELETE /agent/messages`), agent logs (`GET /agent/logs`), internal deterministic check endpoint (`POST /internal/task-health/run-once`), Prisma client, Zod config. Streamed agent errors now return specific messages to the client (instead of generic text). Agent tools and system prompt now expose task `priority`, `startDate`, and `endDate`, so the AI can read, set, reschedule, and clear task timing metadata. Deterministic in-app scheduler is controlled via env vars and runs deadline/workload checks with notification dedupe. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common/`.
 - **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`.
 - **Database:** PostgreSQL via local install. Prisma schema with 5 models (Project, Task, Event, AgentLog, ChatMessage), migrations applied.
 - **README:** Includes a clear "Project Status: Work in Progress" section for public-repo expectations.
@@ -30,6 +30,7 @@
 | Agent coordinator + SSE | DONE | `apps/api/src/features/agent/agent.coordinator.ts`, `agent.router.ts`, `agent.prompts.ts` |
 | Agent chat persistence | DONE | `apps/api/prisma/migrations/20260416230000_add_chat_messages/` |
 | AgentSidebar + ThoughtProcess | DONE | `apps/web/components/agent/AgentSidebar.tsx`, `AgentMessage.tsx`, `ThoughtProcess.tsx`, `components/board/BoardWithSidebar.tsx` |
+| Deterministic task-health scheduler (deadline/workload checks) | IN PROGRESS | `apps/api/src/features/task-health/task-health.service.ts`, `task-health.scheduler.ts`, `task-health.router.ts`, `apps/api/src/config.ts`, `apps/api/.env.example` |
 | Chat UI improvements | DONE | Markdown rendering in agent messages, responsive sidebar (mobile overlay + desktop panel with slide transition), auto-resize textarea, typing indicator animation |
 | Docker compose (working) | DONE | `docker-compose.yml` (PostgreSQL 16, optional — local PG used) |
 | Tests | NOT STARTED | `apps/api/tests/` |
@@ -128,5 +129,8 @@
 `apps/web/components/agent/AgentSidebar.tsx` → Client component: chat sidebar with useChat, DB-persisted message history, SWR board revalidation
 `apps/web/components/agent/AgentMessage.tsx` → Client component: single chat bubble (user/assistant), renders ThoughtProcess for tool calls
 `apps/web/components/agent/ThoughtProcess.tsx` → Client component: expandable tool-call cards with status indicators, color-coded by tool type
+`apps/api/src/features/task-health/task-health.service.ts` → Deterministic task-health checks (deadline soon, overdue, workload thresholds) with deduped notification creation
+`apps/api/src/features/task-health/task-health.scheduler.ts` → Env-toggled in-app scheduler bootstrap (`start`, `stop`, `runOnce`) with overlap guard and cycle logging
+`apps/api/src/features/task-health/task-health.router.ts` → Internal endpoint `POST /internal/task-health/run-once` to trigger one deterministic check cycle
 `apps/api/src/features/agent/agent.prompts.ts` → System prompt template builder (plain text, no logic)
 `apps/api/prisma/migrations/20260416230000_add_chat_messages/migration.sql` → Migration adding ChatMessage table for chat persistence
