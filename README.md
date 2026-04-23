@@ -168,8 +168,11 @@ curl http://localhost:4000/health
 │   │       ├── features/
 │   │       │   ├── agent/
 │   │       │   ├── events/
+│   │       │   ├── notifications/
 │   │       │   ├── projects/
-│   │       │   └── tasks/
+│   │       │   ├── task-health/
+│   │       │   ├── tasks/
+│   │       │   └── weekly-project-check/
 │   │       ├── lib/
 │   │       └── middlewares/
 │   └── web/
@@ -179,6 +182,7 @@ curl http://localhost:4000/health
 │       ├── components/
 │       │   ├── agent/
 │       │   ├── board/
+│       │   ├── notifications/
 │       │   └── projects/
 │       ├── hooks/
 │       └── lib/
