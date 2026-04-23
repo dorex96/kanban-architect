@@ -18,7 +18,7 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().default('claude-3-5-sonnet-latest'),
   ENABLE_TASK_HEALTH_SCHEDULER: booleanFromEnv.default(false),
-  TASK_HEALTH_SCHEDULER_INTERVAL_MS: z.coerce.number().int().positive().default(60_000),
+  TASK_HEALTH_SCHEDULER_INTERVAL_MIN: z.coerce.number().int().positive().default(60),
   TASK_DEADLINE_LOOKAHEAD_HOURS: z.coerce.number().positive().default(24),
   TASK_WORKLOAD_OPEN_THRESHOLD: z.coerce.number().int().positive().default(20),
   TASK_WORKLOAD_IN_PROGRESS_THRESHOLD: z.coerce.number().int().positive().default(8),

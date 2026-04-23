@@ -16,14 +16,14 @@ export function startTaskHealthScheduler(): void {
   }
 
   console.log(
-    `[task-health] scheduler enabled interval=${config.TASK_HEALTH_SCHEDULER_INTERVAL_MS}ms lookahead=${config.TASK_DEADLINE_LOOKAHEAD_HOURS}h`,
+    `[task-health] scheduler enabled interval=${config.TASK_HEALTH_SCHEDULER_INTERVAL_MIN}min lookahead=${config.TASK_DEADLINE_LOOKAHEAD_HOURS}h`,
   );
 
   void runCycle();
 
   schedulerTimer = setInterval(() => {
     void runCycle();
-  }, config.TASK_HEALTH_SCHEDULER_INTERVAL_MS);
+  }, config.TASK_HEALTH_SCHEDULER_INTERVAL_MIN * 60 * 1000);
 }
 
 export function stopTaskHealthScheduler(): void {
