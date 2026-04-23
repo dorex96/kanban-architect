@@ -82,3 +82,30 @@ export interface Event {
   action: string;
   timestamp: string;
 }
+
+export type WeeklyCheckTriggerType = 'SCHEDULED' | 'MANUAL';
+export type WeeklyCheckRunStatus = 'SUCCESS' | 'ERROR' | 'SKIP';
+
+export interface WeeklyProjectCheckBatchSummary {
+  checkedProjects: number;
+  successRuns: number;
+  skippedRuns: number;
+  failedRuns: number;
+  createdNotifications: number;
+  startedAt: string;
+  finishedAt: string;
+  errors: string[];
+}
+
+export interface WeeklyProjectCheckRunItem {
+  id: string;
+  projectId: string;
+  triggerType: WeeklyCheckTriggerType;
+  status: WeeklyCheckRunStatus;
+  tasksAnalyzed: number;
+  generatedText: string | null;
+  errorMessage: string | null;
+  startedAt: string;
+  finishedAt: string;
+  createdAt: string;
+}

@@ -28,6 +28,10 @@ const envSchema = z.object({
   WEEKLY_PROJECT_CHECK_TIMEZONE: z.string().default('Europe/Rome'),
   WEEKLY_PROJECT_CHECK_MAX_PROMPT_CHARS: z.coerce.number().int().positive().default(12000),
   WEEKLY_PROJECT_CHECK_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(900),
+  WEEKLY_PROJECT_CHECK_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
+  WEEKLY_PROJECT_CHECK_RETRY_DELAY_MS: z.coerce.number().int().min(0).default(1000),
+  WEEKLY_PROJECT_CHECK_RETRY_SECOND_DELAY_MS: z.coerce.number().int().min(0).default(3000),
+  WEEKLY_PROJECT_CHECK_HISTORY_LIMIT: z.coerce.number().int().positive().default(20),
 });
 
 export const config = envSchema.parse(process.env);

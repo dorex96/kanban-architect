@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import type { Task, Notification } from '@kanban/types';
+import type { Notification, Task } from '@kanban/types';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useWeeklyProjectCheck } from '@/hooks/useWeeklyProjectCheck';
 import { BoardWithSidebar } from './BoardWithSidebar';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { WeeklyCheckHistoryPanel } from '../notifications/WeeklyCheckHistoryPanel';
 
 interface BoardPageClientProps {
   projectId: string;
@@ -21,6 +24,12 @@ export function BoardPageClient({
 }: BoardPageClientProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [prefillInput, setPrefillInput] = useState('');
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [isRunningCheck, setIsRunningCheck] = useState(false);
+  const [runError, setRunError] = useState<string | null>(null);
+
+  const notifications = useNotifications(projectId, fallbackNotifications);
+  const weeklyCheck = useWeeklyProjectCheck(projectId);
 
   const handleOpenSidebar = (prefill = '') => {
     setSidebarOpen(true);
@@ -30,6 +39,20 @@ export function BoardPageClient({
   const handleToggleSidebar = (open: boolean) => {
     setSidebarOpen(open);
     if (!open) setPrefillInput('');
+  };
+
+  const handleRunWeeklyCheck = async () => {
+    setRunError(null);
+    setIsRunningCheck(true);
+    try {
+      await weeklyCheck.runManualCheck(projectId);
+      await notifications.mutate();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to run weekly check';
+      setRunError(message);
+    } finally {
+      setIsRunningCheck(false);
+    }
   };
 
   return (
@@ -45,7 +68,29 @@ export function BoardPageClient({
           </svg>
         </Link>
         <h1 className="text-base font-semibold tracking-tight text-stone-900">{projectName}</h1>
-        <div className="ml-auto">
+
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => void handleRunWeeklyCheck()}
+            disabled={isRunningCheck}
+            className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isRunningCheck ? 'Running weekly check...' : 'Run weekly check'}
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={() => setHistoryOpen((value) => !value)}
+              className="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+            >
+              Weekly history
+            </button>
+
+            {historyOpen && (
+              <WeeklyCheckHistoryPanel runs={weeklyCheck.history} loading={weeklyCheck.isLoading} />
+            )}
+          </div>
+
           <NotificationBell
             projectId={projectId}
             fallbackData={fallbackNotifications}
@@ -53,6 +98,10 @@ export function BoardPageClient({
           />
         </div>
       </header>
+
+      {runError && (
+        <div className="border-b border-rose-200 bg-rose-50 px-6 py-2 text-sm text-rose-700">{runError}</div>
+      )}
 
       <div className="min-h-0 flex-1">
         <BoardWithSidebar

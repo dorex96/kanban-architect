@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Notification } from '@kanban/types';
 
 interface NotificationModalProps {
@@ -28,8 +30,7 @@ export function NotificationModal({ notification, onClose, onOpenSidebar }: Noti
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
-        {/* Header */}
+      <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
           <div className="flex items-center gap-2">
             <span className="text-lg text-violet-600">✦</span>
@@ -45,12 +46,12 @@ export function NotificationModal({ notification, onClose, onOpenSidebar }: Noti
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-5 py-4">
-          <p className="text-sm leading-relaxed text-stone-700">{notification.message}</p>
+        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
+          <div className="markdown text-sm">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{notification.message}</ReactMarkdown>
+          </div>
         </div>
 
-        {/* Action */}
         <div className="border-t border-stone-100 px-5 pb-5 pt-4">
           <button
             onClick={handleReply}

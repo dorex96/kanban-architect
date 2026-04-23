@@ -40,11 +40,11 @@ export function stopWeeklyProjectCheckScheduler(): void {
   console.log('[weekly-project-check] scheduler stopped');
 }
 
-export async function runWeeklyProjectCheckCycleOnce() {
-  return runCycle('MANUAL');
+export async function runWeeklyProjectCheckCycleOnce(projectId?: string) {
+  return runCycle('MANUAL', projectId);
 }
 
-async function runCycle(triggerType: 'SCHEDULED' | 'MANUAL') {
+async function runCycle(triggerType: 'SCHEDULED' | 'MANUAL', projectId?: string) {
   if (runInProgress) {
     console.log('[weekly-project-check] previous cycle still running, skipping tick');
     return {
@@ -61,9 +61,9 @@ async function runCycle(triggerType: 'SCHEDULED' | 'MANUAL') {
 
   runInProgress = true;
   try {
-    const summary = await runWeeklyProjectCheckBatch(triggerType);
+    const summary = await runWeeklyProjectCheckBatch({ triggerType, projectId });
     console.log(
-      `[weekly-project-check] cycle complete trigger=${triggerType} projects=${summary.checkedProjects} success=${summary.successRuns} skipped=${summary.skippedRuns} failed=${summary.failedRuns} notifications=${summary.createdNotifications}`,
+      `[weekly-project-check] cycle complete trigger=${triggerType} projectId=${projectId ?? 'all'} projects=${summary.checkedProjects} success=${summary.successRuns} skipped=${summary.skippedRuns} failed=${summary.failedRuns} notifications=${summary.createdNotifications}`,
     );
     return summary;
   } catch (error) {
