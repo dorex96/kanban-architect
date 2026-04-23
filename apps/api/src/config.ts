@@ -23,6 +23,11 @@ const envSchema = z.object({
   TASK_WORKLOAD_OPEN_THRESHOLD: z.coerce.number().int().positive().default(20),
   TASK_WORKLOAD_IN_PROGRESS_THRESHOLD: z.coerce.number().int().positive().default(8),
   TASK_HEALTH_DEDUPE_WINDOW_HOURS: z.coerce.number().positive().default(24),
+  ENABLE_WEEKLY_PROJECT_CHECK_SCHEDULER: booleanFromEnv.default(false),
+  WEEKLY_PROJECT_CHECK_CRON: z.string().default('0 9 * * 1'),
+  WEEKLY_PROJECT_CHECK_TIMEZONE: z.string().default('Europe/Rome'),
+  WEEKLY_PROJECT_CHECK_MAX_PROMPT_CHARS: z.coerce.number().int().positive().default(12000),
+  WEEKLY_PROJECT_CHECK_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(900),
 });
 
 export const config = envSchema.parse(process.env);

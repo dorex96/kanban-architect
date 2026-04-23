@@ -23,6 +23,18 @@ model Project {
   agentLogs     AgentLog[]
   chatMessages  ChatMessage[]
   notifications Notification[]
+  weeklyChecks  WeeklyProjectCheckRun[]
+}
+
+enum WeeklyProjectCheckRunStatus {
+  SUCCESS
+  ERROR
+  SKIP
+}
+
+enum WeeklyProjectCheckTriggerType {
+  SCHEDULED
+  MANUAL
 }
 
 model Task {
@@ -89,4 +101,21 @@ model Notification {
   project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+}
+
+model WeeklyProjectCheckRun {
+  id           String                        @id @default(cuid())
+  projectId    String
+  triggerType  WeeklyProjectCheckTriggerType
+  status       WeeklyProjectCheckRunStatus
+  tasksAnalyzed Int                          @default(0)
+  generatedText String?
+  errorMessage  String?
+  startedAt     DateTime
+  finishedAt    DateTime
+  createdAt     DateTime                     @default(now())
+  project       Project                      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt])
 }

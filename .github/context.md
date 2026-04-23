@@ -4,7 +4,7 @@
 
 ## Current State
 
-- **Phase:** Deterministic task-health monitoring in progress — env-toggled in-app scheduler checks deadline/workload signals and writes deduplicated notifications, with an internal run-once endpoint for verification.
+- **Phase:** Weekly AI project-state check backend implementation in progress — cron+timezone scheduler runs per-project qualitative analysis with LLM, writes Markdown notifications, and logs each run outcome (success/error/skip).
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
 - **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), board view at `/board/[projectId]` with DnD columns, `useProjects` + `useBoard` SWR hooks, `lib/api.ts` client. Agent chat sidebar via `BoardWithSidebar` + `AgentSidebar` + `AgentMessage` + `ThoughtProcess` components, using `useChat` from `@ai-sdk/react`.
@@ -31,6 +31,7 @@
 | Agent chat persistence | DONE | `apps/api/prisma/migrations/20260416230000_add_chat_messages/` |
 | AgentSidebar + ThoughtProcess | DONE | `apps/web/components/agent/AgentSidebar.tsx`, `AgentMessage.tsx`, `ThoughtProcess.tsx`, `components/board/BoardWithSidebar.tsx` |
 | Deterministic task-health scheduler (deadline/workload checks) | IN PROGRESS | `apps/api/src/features/task-health/task-health.service.ts`, `task-health.scheduler.ts`, `task-health.router.ts`, `apps/api/src/config.ts`, `apps/api/.env.example` |
+| Weekly AI project-state check (backend) | IN PROGRESS | `apps/api/src/features/weekly-project-check/`, `apps/api/src/features/agent/providers/base.ts`, `apps/api/prisma/schema.prisma`, `apps/api/prisma/migrations/20260423101500_add_weekly_project_check_run/` |
 | Chat UI improvements | DONE | Markdown rendering in agent messages, responsive sidebar (mobile overlay + desktop panel with slide transition), auto-resize textarea, typing indicator animation |
 | Docker compose (working) | DONE | `docker-compose.yml` (PostgreSQL 16, optional — local PG used) |
 | Tests | NOT STARTED | `apps/api/tests/` |
@@ -57,6 +58,7 @@
 | `ai`, `@ai-sdk/openai`, `@ai-sdk/anthropic` | `apps/api` | ^4.1.0, ^1.1.0 | `streamText` + provider models |
 | `tsx` | `apps/api` | ^4.19.0 | Dev runner |
 | `@hono/zod-validator` | `apps/api` | ^0.4.x | Zod request validation middleware |
+| `node-cron` | `apps/api` | ^4.2.1 | Timezone-aware weekly cron scheduler |
 
 ## Active Decisions
 
@@ -134,3 +136,10 @@
 `apps/api/src/features/task-health/task-health.router.ts` → Internal endpoint `POST /internal/task-health/run-once` to trigger one deterministic check cycle
 `apps/api/src/features/agent/agent.prompts.ts` → System prompt template builder (plain text, no logic)
 `apps/api/prisma/migrations/20260416230000_add_chat_messages/migration.sql` → Migration adding ChatMessage table for chat persistence
+`apps/api/src/features/agent/providers/base.ts` → Shared LLM provider/model selector (`LLM_PROVIDER`) + configuration error type
+`apps/api/src/features/weekly-project-check/weekly-project-check.prompts.ts` → Structured weekly analysis prompt and truncation guardrail
+`apps/api/src/features/weekly-project-check/weekly-project-check.service.ts` → Weekly batch logic (collect data, call LLM, create Markdown notification, persist run log)
+`apps/api/src/features/weekly-project-check/weekly-project-check.scheduler.ts` → Cron scheduler (`node-cron`) with timezone support and overlap guard
+`apps/api/src/features/weekly-project-check/weekly-project-check.schema.ts` → Validation schema for internal weekly-check endpoint
+`apps/api/src/features/weekly-project-check/weekly-project-check.router.ts` → Internal endpoint `POST /internal/weekly-project-check/run-once`
+`apps/api/prisma/migrations/20260423101500_add_weekly_project_check_run/migration.sql` → Migration adding enums and WeeklyProjectCheckRun table
