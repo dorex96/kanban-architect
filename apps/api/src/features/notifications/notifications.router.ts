@@ -5,9 +5,12 @@ import {
   listNotifications,
   markAsRead,
   replyToNotification,
+  softDeleteNotification,
+  softDeleteReadNotifications,
 } from './notifications.service.js';
 import {
   createNotificationSchema,
+  deleteReadNotificationsQuerySchema,
   listNotificationsQuerySchema,
   replyNotificationSchema,
 } from './notifications.schema.js';
@@ -29,6 +32,18 @@ notificationsRouter.get('/', zValidator('query', listNotificationsQuerySchema), 
 notificationsRouter.patch('/:id/read', async (c) => {
   const id = c.req.param('id');
   const notification = await markAsRead(id);
+  return c.json(notification);
+});
+
+notificationsRouter.delete('/read', zValidator('query', deleteReadNotificationsQuerySchema), async (c) => {
+  const { projectId } = c.req.valid('query');
+  const deletedCount = await softDeleteReadNotifications(projectId);
+  return c.json({ deletedCount });
+});
+
+notificationsRouter.delete('/:id', async (c) => {
+  const id = c.req.param('id');
+  const notification = await softDeleteNotification(id);
   return c.json(notification);
 });
 

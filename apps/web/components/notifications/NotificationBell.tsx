@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Notification } from '@kanban/types';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -14,16 +14,44 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ projectId, fallbackData, onOpenSidebar }: NotificationBellProps) {
-  const { notifications, unreadCount, markAsRead } = useNotifications(
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    deleteNotification,
+    deleteReadNotifications,
+  } = useNotifications(
     projectId,
     fallbackData,
   );
   const [panelOpen, setPanelOpen] = useState(false);
   const [selected, setSelected] = useState<Notification | null>(null);
 
+  useEffect(() => {
+    if (!selected) return;
+    const stillVisible = notifications.some((notification) => notification.id === selected.id);
+    if (!stillVisible) {
+      setSelected(null);
+    }
+  }, [notifications, selected]);
+
   const handleSelect = async (n: Notification) => {
     setSelected(n);
     if (!n.isRead) await markAsRead(n.id);
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    await deleteNotification(id);
+    if (selected?.id === id) {
+      setSelected(null);
+    }
+  };
+
+  const handleDeleteReadNotifications = async () => {
+    await deleteReadNotifications();
+    if (selected?.isRead) {
+      setSelected(null);
+    }
   };
 
   return (
@@ -48,6 +76,12 @@ export function NotificationBell({ projectId, fallbackData, onOpenSidebar }: Not
           notifications={notifications}
           onClose={() => setPanelOpen(false)}
           onSelect={handleSelect}
+          onDelete={(id) => {
+            void handleDeleteNotification(id);
+          }}
+          onDeleteRead={() => {
+            void handleDeleteReadNotifications();
+          }}
         />
       )}
 
@@ -56,6 +90,9 @@ export function NotificationBell({ projectId, fallbackData, onOpenSidebar }: Not
           notification={selected}
           onClose={() => setSelected(null)}
           onOpenSidebar={onOpenSidebar}
+          onDelete={(id) => {
+            void handleDeleteNotification(id);
+          }}
         />,
         document.body,
       )}

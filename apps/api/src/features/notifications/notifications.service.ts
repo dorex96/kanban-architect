@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma.js';
 import { HttpError } from '../../lib/errors.js';
+import { logEvent } from '../events/events.service.js';
 import type { Notification } from '@kanban/types';
 
 export async function createNotification(projectId: string, message: string): Promise<Notification> {
@@ -18,6 +19,7 @@ export async function hasRecentNotification(
     where: {
       projectId,
       message,
+      deletedAt: null,
       createdAt: { gte: since },
     },
     select: { id: true },
@@ -27,21 +29,25 @@ export async function hasRecentNotification(
 
 export async function listNotifications(projectId: string): Promise<Notification[]> {
   const rows = await prisma.notification.findMany({
-    where: { projectId },
+    where: { projectId, deletedAt: null },
     orderBy: { createdAt: 'desc' },
   });
   return rows.map(toNotification);
 }
 
 export async function markAsRead(id: string): Promise<Notification> {
-  const existing = await prisma.notification.findUnique({ where: { id } });
+  const existing = await prisma.notification.findFirst({
+    where: { id, deletedAt: null },
+  });
   if (!existing) throw new HttpError(404, 'Notification not found');
   const row = await prisma.notification.update({ where: { id }, data: { isRead: true } });
   return toNotification(row);
 }
 
 export async function replyToNotification(id: string, reply: string): Promise<Notification> {
-  const existing = await prisma.notification.findUnique({ where: { id } });
+  const existing = await prisma.notification.findFirst({
+    where: { id, deletedAt: null },
+  });
   if (!existing) throw new HttpError(404, 'Notification not found');
 
   const [row] = await prisma.$transaction([
@@ -59,6 +65,40 @@ export async function replyToNotification(id: string, reply: string): Promise<No
   ]);
 
   return toNotification(row);
+}
+
+export async function softDeleteNotification(id: string): Promise<Notification> {
+  const existing = await prisma.notification.findFirst({
+    where: { id, deletedAt: null },
+  });
+  if (!existing) throw new HttpError(404, 'Notification not found');
+
+  const row = await prisma.notification.update({
+    where: { id },
+    data: { deletedAt: new Date() },
+  });
+
+  await logEvent(existing.projectId, 'notification.soft_deleted');
+  return toNotification(row);
+}
+
+export async function softDeleteReadNotifications(projectId: string): Promise<number> {
+  const result = await prisma.notification.updateMany({
+    where: {
+      projectId,
+      isRead: true,
+      deletedAt: null,
+    },
+    data: {
+      deletedAt: new Date(),
+    },
+  });
+
+  if (result.count > 0) {
+    await logEvent(projectId, 'notification.read_bulk_soft_deleted');
+  }
+
+  return result.count;
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────

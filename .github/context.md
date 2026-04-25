@@ -4,7 +4,7 @@
 
 ## Current State
 
-- **Phase:** Weekly AI project-state check full-stack integration in progress — manual run from web UI, internal history endpoint, advanced Markdown notification rendering, immediate retry/backoff for transient LLM errors, and automated Vitest coverage for the weekly-check slice.
+- **Phase:** Weekly AI project-state check full-stack integration in progress, with notifications soft delete now implemented end-to-end (DB `deletedAt`, API delete endpoints, optimistic UI delete actions, and backend notification tests).
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
 - **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), board view at `/board/[projectId]` with DnD columns, `useProjects` + `useBoard` SWR hooks, `lib/api.ts` client. Agent chat sidebar via `BoardWithSidebar` + `AgentSidebar` + `AgentMessage` + `ThoughtProcess` components, using `useChat` from `@ai-sdk/react`.
@@ -33,6 +33,7 @@
 | Deterministic task-health scheduler (deadline/workload checks) | IN PROGRESS | `apps/api/src/features/task-health/task-health.service.ts`, `task-health.scheduler.ts`, `task-health.router.ts`, `apps/api/src/config.ts`, `apps/api/.env.example` |
 | Weekly AI project-state check (backend) | IN PROGRESS | `apps/api/src/features/weekly-project-check/`, `apps/api/src/features/agent/providers/base.ts`, `apps/api/prisma/schema.prisma`, `apps/api/prisma/migrations/20260423101500_add_weekly_project_check_run/` |
 | Weekly-check web integration | IN PROGRESS | `apps/web/components/board/BoardPageClient.tsx`, `apps/web/hooks/useWeeklyProjectCheck.ts`, `apps/web/components/notifications/WeeklyCheckHistoryPanel.tsx`, `apps/web/components/notifications/NotificationModal.tsx` |
+| Notifications soft delete (single + bulk read) | DONE | `apps/api/prisma/migrations/20260425114542_notification_soft_delete/`, `apps/api/src/features/notifications/`, `apps/web/hooks/useNotifications.ts`, `apps/web/components/notifications/NotificationBell.tsx`, `NotificationPanel.tsx`, `NotificationModal.tsx` |
 | Chat UI improvements | DONE | Markdown rendering in agent messages, responsive sidebar (mobile overlay + desktop panel with slide transition), auto-resize textarea, typing indicator animation |
 | Docker compose (working) | DONE | `docker-compose.yml` (PostgreSQL 16, optional — local PG used) |
 | API tests (weekly-check slice) | DONE | `apps/api/src/features/weekly-project-check/*.test.ts`, `apps/api/vitest.config.ts` |
@@ -151,3 +152,12 @@
 `apps/api/src/features/weekly-project-check/weekly-project-check.scheduler.test.ts` → Scheduler tests for cron registration/manual run
 `apps/web/hooks/useWeeklyProjectCheck.ts` → Frontend hook to trigger manual weekly check and fetch history
 `apps/web/components/notifications/WeeklyCheckHistoryPanel.tsx` → Frontend history dropdown panel for weekly-check runs
+`apps/api/prisma/migrations/20260425114542_notification_soft_delete/migration.sql` → Migration adding Notification.deletedAt and active notifications index
+`apps/api/src/features/notifications/notifications.schema.ts` → Notifications Zod schemas (create/list/reply + bulk read delete query)
+`apps/api/src/features/notifications/notifications.service.ts` → Notifications business logic with soft-delete filtering, delete actions, and event logging
+`apps/api/src/features/notifications/notifications.router.ts` → Notifications HTTP routes including `DELETE /notifications/:id` and `DELETE /notifications/read`
+`apps/api/src/features/notifications/notifications.service.test.ts` → Service tests for soft-delete behavior and 404 handling on deleted notifications
+`apps/web/hooks/useNotifications.ts` → SWR notifications hook with optimistic single/bulk delete actions
+`apps/web/components/notifications/NotificationPanel.tsx` → Notifications dropdown UI with row delete and bulk delete-read action
+`apps/web/components/notifications/NotificationModal.tsx` → Notification detail modal with delete action
+`apps/web/components/notifications/NotificationBell.tsx` → Notification bell wiring for delete callbacks and selected-state cleanup

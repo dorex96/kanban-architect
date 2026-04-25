@@ -24,5 +24,47 @@ export function useNotifications(projectId: string, fallbackData?: Notification[
     await mutate();
   };
 
-  return { notifications, unreadCount, markAsRead, replyToNotification, mutate };
+  const deleteNotification = async (id: string) => {
+    const previous = notifications;
+
+    await mutate(
+      (current) => (current ?? []).filter((notification) => notification.id !== id),
+      { revalidate: false },
+    );
+
+    try {
+      await api.delete<Notification>(`/notifications/${id}`);
+      await mutate();
+    } catch (error) {
+      await mutate(previous, { revalidate: false });
+      throw error;
+    }
+  };
+
+  const deleteReadNotifications = async () => {
+    const previous = notifications;
+
+    await mutate(
+      (current) => (current ?? []).filter((notification) => !notification.isRead),
+      { revalidate: false },
+    );
+
+    try {
+      await api.delete<{ deletedCount: number }>(`/notifications/read?projectId=${projectId}`);
+      await mutate();
+    } catch (error) {
+      await mutate(previous, { revalidate: false });
+      throw error;
+    }
+  };
+
+  return {
+    notifications,
+    unreadCount,
+    markAsRead,
+    replyToNotification,
+    deleteNotification,
+    deleteReadNotifications,
+    mutate,
+  };
 }

@@ -9,9 +9,15 @@ interface NotificationModalProps {
   notification: Notification;
   onClose: () => void;
   onOpenSidebar: (prefill?: string) => void;
+  onDelete: (id: string) => void;
 }
 
-export function NotificationModal({ notification, onClose, onOpenSidebar }: NotificationModalProps) {
+export function NotificationModal({
+  notification,
+  onClose,
+  onOpenSidebar,
+  onDelete,
+}: NotificationModalProps) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -53,12 +59,23 @@ export function NotificationModal({ notification, onClose, onOpenSidebar }: Noti
         </div>
 
         <div className="border-t border-stone-100 px-5 pb-5 pt-4">
-          <button
-            onClick={handleReply}
-            className="w-full rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700"
-          >
-            Reply in Chat
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                onDelete(notification.id);
+                onClose();
+              }}
+              className="rounded-lg border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50"
+            >
+              Delete
+            </button>
+            <button
+              onClick={handleReply}
+              className="flex-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700"
+            >
+              Reply in Chat
+            </button>
+          </div>
         </div>
       </div>
     </div>
