@@ -59,22 +59,31 @@ export function NotificationModal({
         </div>
 
         <div className="border-t border-stone-100 px-5 pb-5 pt-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               onClick={() => {
                 onDelete(notification.id);
                 onClose();
               }}
-              className="rounded-lg border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50"
+              className="rounded-lg border border-rose-200 px-4 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
             >
               Delete
             </button>
-            <button
-              onClick={handleReply}
-              className="flex-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700"
-            >
-              Reply in Chat
-            </button>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+              <button
+                onClick={onClose}
+                className="rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleReply}
+                className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+              >
+                Reply in Chat
+              </button>
+            </div>
           </div>
         </div>
       </div>
