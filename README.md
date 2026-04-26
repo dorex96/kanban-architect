@@ -4,24 +4,56 @@ AI-powered Kanban board. Type a goal and an AI agent creates tasks on the board 
 
 TypeScript monorepo: **Next.js 14** frontend, **Hono** API, shared types.
 
+## Features
+
+- **Kanban board** — four columns (`INBOX → TODO → IN_PROGRESS → DONE`), drag-and-drop reordering, inline task creation and rename
+- **Projects** — create, rename, and delete multiple boards; each board is a standalone project
+- **Task metadata** — optional priority, start date, and end date per task; the AI agent can read and set these fields
+- **AI agent** — type a goal in the sidebar and an AI agent plans and creates tasks on the board in real time via SSE streaming
+- **Multi-turn chat** — full conversation history persisted in the database, restored on page reload
+- **LLM provider switching** — set `LLM_PROVIDER=openai | anthropic | ollama` to change the entire AI stack without touching code
+- **Notifications** — in-app bell with unread badge; task-health checks fire automatic notifications for approaching deadlines and high workload
+- **Weekly AI project-state report** — a scheduled LLM analysis reviews each project weekly and delivers a Markdown summary as a notification
+- **Agent thought process** — expandable tool-call cards show reasoning and actions taken by the AI in real time
+
 ## Project Status: Work in Progress
 
 This repository is public as a build-in-public project.
-Core Kanban and AI agent features are implemented and usable, while automated tests and production hardening are still in progress.
+Core Kanban and AI agent features are implemented and usable, while production hardening is still in progress.
 
 ### What works now
 
+**Board & tasks**
 - Project creation, rename, and delete
 - Board view with 4 columns (`INBOX`, `TODO`, `IN_PROGRESS`, `DONE`)
-- Task creation, rename, delete
+- Task creation, inline rename, and delete
 - Drag-and-drop reordering with fractional `positionIndex`
-- API with feature-based slices (`projects`, `tasks`, `events`)
-- Agent feature slice in API (`tools`, coordinator, SSE endpoint)
-- Agent chat sidebar in frontend (`AgentSidebar`, `ThoughtProcess`)
-- Multi-turn AI chat with persisted message history (`ChatMessage`)
-- Agent logs with tool calls (`AgentLog`)
-- LLM provider switching via `LLM_PROVIDER` (`openai | anthropic | ollama`)
-- Shared types package for frontend and backend
+- Task metadata fields: priority, start date, and end date
+
+**AI agent**
+- Agent chat sidebar (`AgentSidebar`, `AgentMessage`, `ThoughtProcess`)
+- Multi-turn AI chat with persisted message history (`ChatMessage` table)
+- Agent logs with tool calls stored in `AgentLog` table
+- LLM provider switching via `LLM_PROVIDER` env var (`openai | anthropic | ollama`)
+- Streamed agent errors surfaced directly in the chat UI
+- Responsive sidebar: mobile overlay and desktop slide-in panel
+- Markdown rendering and typing indicator in chat messages
+
+**Notifications & health checks**
+- In-app notification bell with unread badge and panel
+- Notification detail modal with agent reply shortcut
+- Soft-delete for individual and bulk-read notifications
+- Deterministic task-health scheduler: deadline and workload threshold checks with deduped notifications
+- Weekly AI project-state report: scheduled LLM analysis with Markdown summary delivered as a notification
+
+**Backend**
+- REST API with vertical-slice architecture (`projects`, `tasks`, `events`, `agent`, `notifications`, `task-health`, `weekly-project-check`)
+- SSE streaming endpoint compatible with Vercel AI SDK `useChat`
+- Chat history endpoints (`GET / DELETE /agent/messages`)
+- Agent log endpoint (`GET /agent/logs`)
+- Internal scheduler endpoints for manual trigger and history queries
+- Shared types package (`@kanban/types`) used by both frontend and backend
+- Automated backend tests (Vitest) for the weekly-check feature slice
 
 ## Architecture
 
@@ -33,15 +65,17 @@ packages/types/    → Shared TS interfaces (@kanban/types)
 
 ### Database
 
-PostgreSQL with five tables:
+PostgreSQL with seven tables:
 
 | Table | Purpose |
 |---|---|
 | **Projects** | Kanban boards |
-| **Tasks** | Cards with status (`INBOX`, `TODO`, `IN_PROGRESS`, `DONE`) and fractional `positionIndex` |
+| **Tasks** | Cards with status (`INBOX`, `TODO`, `IN_PROGRESS`, `DONE`), fractional `positionIndex`, and optional priority / dates |
 | **Events** | Audit log for all mutations |
 | **AgentLogs** | AI agent queries, reasoning, and tool calls |
 | **ChatMessages** | Persisted user/assistant chat history per project |
+| **Notifications** | In-app alerts from task-health checks and weekly reports (soft-delete) |
+| **WeeklyProjectCheckRuns** | Log of weekly AI analysis runs with status and result metadata |
 
 ## Prerequisites
 
@@ -107,10 +141,30 @@ For AI features, also set in `apps/api/.env`:
 LLM_PROVIDER=openai          # openai | anthropic | ollama
 OPENAI_API_KEY=sk-...        # if using OpenAI
 ANTHROPIC_API_KEY=sk-ant-... # if using Anthropic
+ANTHROPIC_MODEL=claude-3-5-sonnet-latest  # optional, Anthropic only
 # OLLAMA uses local endpoint http://localhost:11434/v1
 ```
 
-### Agent API endpoints
+For the automated schedulers (optional, off by default):
+
+```env
+# Task-health checks
+ENABLE_TASK_HEALTH_SCHEDULER=false
+TASK_HEALTH_SCHEDULER_INTERVAL_MIN=60
+TASK_DEADLINE_LOOKAHEAD_HOURS=24
+TASK_WORKLOAD_OPEN_THRESHOLD=20
+TASK_WORKLOAD_IN_PROGRESS_THRESHOLD=8
+TASK_HEALTH_DEDUPE_WINDOW_HOURS=24
+
+# Weekly AI project-state report
+ENABLE_WEEKLY_PROJECT_CHECK_SCHEDULER=false
+WEEKLY_PROJECT_CHECK_CRON=0 9 * * 1   # every Monday at 09:00
+WEEKLY_PROJECT_CHECK_TIMEZONE=Europe/Rome
+```
+
+### API endpoints
+
+**Agent**
 
 | Method | Path | Description |
 |---|---|---|
@@ -118,6 +172,24 @@ ANTHROPIC_API_KEY=sk-ant-... # if using Anthropic
 | `GET` | `/agent/messages?projectId=...` | Load persisted chat history |
 | `DELETE` | `/agent/messages?projectId=...` | Clear persisted chat history |
 | `GET` | `/agent/logs?projectId=...` | Load recent agent logs and tool calls |
+
+**Notifications**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/notifications?projectId=...` | List active notifications |
+| `PATCH` | `/notifications/:id/read` | Mark a notification as read |
+| `DELETE` | `/notifications/:id` | Soft-delete a notification |
+| `DELETE` | `/notifications/read?projectId=...` | Soft-delete all read notifications |
+| `POST` | `/notifications/:id/reply` | Store a reply on a notification |
+
+**Internal schedulers**
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/internal/task-health/run-once` | Trigger one deterministic health-check cycle |
+| `POST` | `/internal/weekly-project-check/run-once` | Trigger a weekly AI analysis run |
+| `GET` | `/internal/weekly-project-check/history` | Fetch weekly-check run history |
 
 ### 4. Run database migrations
 
