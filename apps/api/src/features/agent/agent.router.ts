@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import type { NotificationReplyContext } from '@kanban/types';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { runAgent, ConfigurationError } from './agent.coordinator.js';
 
@@ -14,6 +16,11 @@ const chatMessageSchema = z.object({
 const runAgentSchema = z.object({
   messages: z.array(chatMessageSchema).min(1),
   projectId: z.string().min(1),
+  replyContext: z.object({
+    notificationId: z.string().min(1),
+    notificationMessage: z.string().min(1),
+    notificationCreatedAt: z.string().min(1),
+  }).optional(),
 });
 
 const projectIdQuerySchema = z.object({
@@ -25,9 +32,9 @@ router.post(
   '/run',
   zValidator('json', runAgentSchema),
   async (c) => {
-    const { projectId, messages } = c.req.valid('json');
+    const { projectId, messages, replyContext } = c.req.valid('json');
     try {
-      const result = await runAgent({ projectId, messages });
+      const result = await runAgent({ projectId, messages, replyContext });
       return result.toDataStreamResponse({
         getErrorMessage: (error: unknown) => {
           if (error instanceof Error) {
@@ -54,11 +61,39 @@ router.get(
     const messages = await prisma.chatMessage.findMany({
       where: { projectId },
       orderBy: { createdAt: 'asc' },
-      select: { id: true, role: true, content: true, createdAt: true },
+      select: { id: true, role: true, content: true, replyContext: true, createdAt: true },
     });
-    return c.json(messages);
+    return c.json(messages.map((message) => ({
+      ...message,
+      replyContext: parseReplyContext(message.replyContext),
+    })));
   },
 );
+
+function parseReplyContext(value: Prisma.JsonValue | null): NotificationReplyContext | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  const maybeContext = value as Record<string, unknown>;
+  const notificationId = maybeContext.notificationId;
+  const notificationMessage = maybeContext.notificationMessage;
+  const notificationCreatedAt = maybeContext.notificationCreatedAt;
+
+  if (
+    typeof notificationId !== 'string'
+    || typeof notificationMessage !== 'string'
+    || typeof notificationCreatedAt !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    notificationId,
+    notificationMessage,
+    notificationCreatedAt,
+  };
+}
 
 // DELETE /agent/messages?projectId= — clear chat history
 router.delete(
