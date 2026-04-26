@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { Notification, NotificationReplyContext } from '@kanban/types';
+import { MarkdownContent } from '@/components/shared/MarkdownContent';
 
 interface NotificationModalProps {
   notification: Notification;
@@ -57,9 +56,7 @@ export function NotificationModal({
         </div>
 
         <div className="max-h-[70vh] overflow-y-auto px-5 py-4">
-          <div className="markdown text-sm">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{notification.message}</ReactMarkdown>
-          </div>
+          <MarkdownContent content={notification.message} className="text-sm" />
         </div>
 
         <div className="border-t border-stone-100 px-5 pb-5 pt-4">

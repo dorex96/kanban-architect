@@ -1,8 +1,7 @@
 'use client';
 
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { NotificationReplyContext } from '@kanban/types';
+import { MarkdownContent } from '@/components/shared/MarkdownContent';
 import { cn } from '@/lib/utils';
 import { ThoughtProcess } from './ThoughtProcess';
 
@@ -53,9 +52,7 @@ export function AgentMessage({ role, content, toolInvocations, replyContext }: A
           isUser ? (
             <div className="whitespace-pre-wrap break-words">{content}</div>
           ) : (
-            <div className="markdown text-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-            </div>
+            <MarkdownContent content={content} className="text-sm" />
           )
         )}
         {toolInvocations && toolInvocations.length > 0 && (

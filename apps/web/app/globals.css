@@ -30,11 +30,13 @@
   .markdown h1 { @apply text-xl font-bold text-stone-900 mt-5 mb-2; }
   .markdown h2 { @apply text-lg font-semibold text-stone-900 mt-4 mb-1.5; }
   .markdown h3 { @apply text-base font-semibold text-stone-800 mt-3 mb-1; }
+  .markdown h4 { @apply text-sm font-semibold text-stone-800 mt-3 mb-1; }
   .markdown p  { @apply my-2 leading-relaxed text-stone-700; }
   .markdown ul { @apply list-disc pl-5 my-2 space-y-0.5 text-stone-700; }
   .markdown ol { @apply list-decimal pl-5 my-2 space-y-0.5 text-stone-700; }
+  .markdown ul ul, .markdown ol ol, .markdown ul ol, .markdown ol ul { @apply my-1; }
   .markdown li > p { @apply my-0; }
-  .markdown code { @apply bg-stone-100 rounded px-1 py-0.5 text-xs font-mono text-violet-700; }
+  .markdown code { @apply break-words bg-stone-100 rounded px-1 py-0.5 text-xs font-mono text-violet-700; }
   .markdown pre { @apply bg-stone-100 rounded-lg p-3 overflow-x-auto my-3 text-xs font-mono text-stone-800; }
   .markdown pre code { @apply bg-transparent p-0 text-stone-800; }
   .markdown blockquote { @apply border-l-4 border-stone-200 pl-4 text-stone-500 italic my-3; }
@@ -42,6 +44,30 @@
   .markdown strong { @apply font-semibold text-stone-900; }
   .markdown em { @apply italic; }
   .markdown hr { @apply border-stone-200 my-4; }
+  .markdown table { @apply my-4 w-full border-collapse text-left text-sm; }
+  .markdown thead { @apply bg-stone-100; }
+  .markdown th { @apply border border-stone-200 px-3 py-2 font-semibold text-stone-900; }
+  .markdown td { @apply border border-stone-200 px-3 py-2 align-top text-stone-700; }
   .markdown > *:first-child { @apply mt-0; }
   .markdown > *:last-child { @apply mb-0; }
+
+  .markdown-invert h1,
+  .markdown-invert h2,
+  .markdown-invert h3,
+  .markdown-invert h4,
+  .markdown-invert strong { @apply text-white; }
+
+  .markdown-invert p,
+  .markdown-invert ul,
+  .markdown-invert ol,
+  .markdown-invert td,
+  .markdown-invert blockquote { @apply text-violet-50; }
+
+  .markdown-invert code { @apply bg-white/15 text-white; }
+  .markdown-invert pre { @apply bg-black/20 text-white; }
+  .markdown-invert pre code { @apply text-white; }
+  .markdown-invert a { @apply text-white underline decoration-white/60; }
+  .markdown-invert th { @apply border-white/15 bg-white/10 text-white; }
+  .markdown-invert td { @apply border-white/15; }
+  .markdown-invert hr { @apply border-white/15; }
 }
