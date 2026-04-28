@@ -3,11 +3,45 @@ import { HttpError } from '../../lib/errors.js';
 import { logEvent } from '../events/events.service.js';
 import type { Notification } from '@kanban/types';
 
-export async function createNotification(projectId: string, message: string): Promise<Notification> {
+export async function createNotification(
+  projectId: string,
+  message: string,
+  taskId?: string,
+): Promise<Notification> {
   const row = await prisma.notification.create({
-    data: { projectId, message },
+    data: { projectId, message, taskId: taskId ?? null },
   });
+
+  if (taskId) {
+    const sentDate = toDateString(new Date());
+    await prisma.sentNotificationLog.upsert({
+      where: { taskId_sentDate: { taskId, sentDate } },
+      create: { taskId, projectId, sentDate },
+      update: {},
+    });
+  }
+
   return toNotification(row);
+}
+
+export async function hasPendingTaskNotification(taskId: string): Promise<boolean> {
+  const row = await prisma.notification.findFirst({
+    where: {
+      taskId,
+      isRead: false,
+      deletedAt: null,
+    },
+    select: { id: true },
+  });
+  return Boolean(row);
+}
+
+export async function hasDailyTaskNotification(taskId: string, date: string): Promise<boolean> {
+  const row = await prisma.sentNotificationLog.findFirst({
+    where: { taskId, sentDate: date },
+    select: { id: true },
+  });
+  return Boolean(row);
 }
 
 export async function hasRecentNotification(
@@ -103,9 +137,14 @@ export async function softDeleteReadNotifications(projectId: string): Promise<nu
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+function toDateString(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 function toNotification(row: {
   id: string;
   projectId: string;
+  taskId: string | null;
   message: string;
   isRead: boolean;
   reply: string | null;
@@ -115,6 +154,7 @@ function toNotification(row: {
   return {
     id: row.id,
     projectId: row.projectId,
+    taskId: row.taskId,
     message: row.message,
     isRead: row.isRead,
     reply: row.reply,

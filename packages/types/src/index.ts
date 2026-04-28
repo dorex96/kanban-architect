@@ -68,6 +68,7 @@ export interface Project {
 export interface Notification {
   id: string;
   projectId: string;
+  taskId: string | null;
   message: string;
   isRead: boolean;
   reply: string | null;
