@@ -137,7 +137,7 @@ export async function softDeleteReadNotifications(projectId: string): Promise<nu
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function toDateString(date: Date): string {
+export function toDateString(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 

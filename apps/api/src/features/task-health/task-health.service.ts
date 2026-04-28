@@ -5,6 +5,7 @@ import {
   hasDailyTaskNotification,
   hasPendingTaskNotification,
   hasRecentNotification,
+  toDateString,
 } from '../notifications/notifications.service.js';
 import { listProjects } from '../projects/projects.service.js';
 import { listTasks } from '../tasks/tasks.service.js';
@@ -127,7 +128,7 @@ async function createDedupedNotification(
     if (isPending) return false;
 
     // Daily limit: skip if a notification for this task was already sent today
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toDateString(new Date());
     const sentToday = await hasDailyTaskNotification(taskId, today);
     if (sentToday) return false;
 
