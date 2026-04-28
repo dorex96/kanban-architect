@@ -10,7 +10,7 @@ import { SortControls, type SortBy, type SortDir } from './SortControls';
 
 const STATUSES: TaskStatus[] = ['INBOX', 'TODO', 'IN_PROGRESS', 'DONE'];
 
-function getDuration(task: Task): number | null {
+function getDurationMs(task: Task): number | null {
   if (!task.startDate || !task.endDate) return null;
   return new Date(task.endDate).getTime() - new Date(task.startDate).getTime();
 }
@@ -33,8 +33,8 @@ function sortTasks(tasks: Task[], sortBy: SortBy, sortDir: SortDir): Task[] {
       bVal = b.endDate ? new Date(b.endDate).getTime() : null;
     } else {
       // duration
-      aVal = getDuration(a);
-      bVal = getDuration(b);
+      aVal = getDurationMs(a);
+      bVal = getDurationMs(b);
     }
 
     // Nulls always go to the end regardless of direction
@@ -60,6 +60,11 @@ export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
   const [sortBy, setSortBy] = useState<SortBy>('position');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
+  function handleSortByChange(value: SortBy) {
+    setSortBy(value);
+    if (value === 'position') setSortDir('asc');
+  }
+
   function onDragEnd(result: DropResult) {
     const { source, destination, draggableId } = result;
 
@@ -74,19 +79,23 @@ export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
     if (isSameColumn && source.index === destination.index) return;
 
     const newStatus = destination.droppableId as TaskStatus;
-    // For position calculation, always use the positionIndex-sorted column data
-    const targetColumn = board[newStatus].filter((t) => t.id !== draggableId);
+
+    // Use the same sorted order as the visual column so destination.index
+    // correctly maps to the right position when a custom sort is active.
+    const visualColumn = sortTasks(board[newStatus], sortBy, sortDir).filter(
+      (t) => t.id !== draggableId,
+    );
 
     let newPositionIndex: number;
-    if (targetColumn.length === 0) {
+    if (visualColumn.length === 0) {
       newPositionIndex = 1.0;
     } else if (destination.index === 0) {
-      newPositionIndex = targetColumn[0].positionIndex / 2;
-    } else if (destination.index >= targetColumn.length) {
-      newPositionIndex = targetColumn[targetColumn.length - 1].positionIndex + 1.0;
+      newPositionIndex = visualColumn[0].positionIndex / 2;
+    } else if (destination.index >= visualColumn.length) {
+      newPositionIndex = visualColumn[visualColumn.length - 1].positionIndex + 1.0;
     } else {
-      const before = targetColumn[destination.index - 1].positionIndex;
-      const after = targetColumn[destination.index].positionIndex;
+      const before = visualColumn[destination.index - 1].positionIndex;
+      const after = visualColumn[destination.index].positionIndex;
       newPositionIndex = (before + after) / 2;
     }
 
@@ -99,7 +108,7 @@ export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
         <SortControls
           sortBy={sortBy}
           sortDir={sortDir}
-          onSortByChange={(v) => { setSortBy(v); if (v === 'position') setSortDir('asc'); }}
+          onSortByChange={handleSortByChange}
           onSortDirToggle={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
         />
       </div>
