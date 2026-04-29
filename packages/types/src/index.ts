@@ -76,6 +76,12 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface NotificationReplyContext {
+  notificationId: string;
+  notificationMessage: string;
+  notificationCreatedAt: string;
+}
+
 export interface Event {
   id: string;
   projectId: string;

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import type { Message } from '@ai-sdk/react';
+import type { NotificationReplyContext } from '@kanban/types';
 import { useSWRConfig } from 'swr';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
@@ -15,21 +16,62 @@ interface AgentSidebarProps {
   onClose: () => void;
   isOpen: boolean;
   initialInput?: string;
+  replyContext?: NotificationReplyContext;
 }
 
 interface PersistedMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  replyContext?: NotificationReplyContext | null;
 }
 
-export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: AgentSidebarProps) {
+function truncatePreview(text: string, maxLength = 180): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength).trimEnd()}...`;
+}
+
+type ChatMessageWithContext = Message & { replyContext?: NotificationReplyContext };
+
+function attachReplyContextToLatestUserMessage(
+  messages: Message[],
+  replyContext: NotificationReplyContext,
+): Message[] {
+  const next = [...messages] as ChatMessageWithContext[];
+  for (let i = next.length - 1; i >= 0; i -= 1) {
+    if (next[i].role !== 'user') {
+      continue;
+    }
+
+    if (next[i].replyContext) {
+      break;
+    }
+
+    next[i] = {
+      ...next[i],
+      replyContext,
+    };
+    break;
+  }
+  return next;
+}
+
+export function AgentSidebar({
+  projectId,
+  onClose,
+  isOpen,
+  initialInput,
+  replyContext,
+}: AgentSidebarProps) {
   const { mutate } = useSWRConfig();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [initialMessages, setInitialMessages] = useState<Message[] | undefined>(undefined);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [pendingReplyContext, setPendingReplyContext] = useState<NotificationReplyContext | undefined>(undefined);
+  const [pendingSubmittedReplyContext, setPendingSubmittedReplyContext] = useState<NotificationReplyContext | undefined>(undefined);
+  const [replyContextByMessageId, setReplyContextByMessageId] = useState<Record<string, NotificationReplyContext>>({});
 
   // Load persisted chat history on mount
   useEffect(() => {
@@ -38,11 +80,19 @@ export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: Agent
       .get<PersistedMessage[]>(`/agent/messages?projectId=${projectId}`)
       .then((msgs) => {
         if (cancelled) return;
+        const nextReplyContextByMessageId: Record<string, NotificationReplyContext> = {};
+        for (const message of msgs) {
+          if (message.replyContext) {
+            nextReplyContextByMessageId[message.id] = message.replyContext;
+          }
+        }
+        setReplyContextByMessageId(nextReplyContextByMessageId);
         setInitialMessages(
           msgs.map((m) => ({
             id: m.id,
             role: m.role as Message['role'],
             content: m.content,
+            ...(m.replyContext ? { replyContext: m.replyContext } : {}),
           })),
         );
       })
@@ -111,6 +161,35 @@ export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: Agent
     if (initialInput) setInput(initialInput);
   }, [initialInput, setInput]);
 
+  useEffect(() => {
+    setPendingReplyContext(replyContext);
+  }, [replyContext]);
+
+  // Persist link between the freshly sent user message and its reply context
+  // so the UI keeps showing it while assistant chunks stream in.
+  useEffect(() => {
+    if (!pendingSubmittedReplyContext) {
+      return;
+    }
+
+    const latestUserMessage = [...messages].reverse().find((message) => message.role === 'user');
+    if (!latestUserMessage?.id) {
+      return;
+    }
+
+    setReplyContextByMessageId((current) => {
+      if (current[latestUserMessage.id]) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [latestUserMessage.id]: pendingSubmittedReplyContext,
+      };
+    });
+    setPendingSubmittedReplyContext(undefined);
+  }, [messages, pendingSubmittedReplyContext]);
+
   // Auto-resize textarea
   const handleAutoResize = useCallback(() => {
     const el = inputRef.current;
@@ -131,15 +210,30 @@ export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: Agent
     try {
       await api.delete(`/agent/messages?projectId=${projectId}`);
       setMessages([]);
+      setReplyContextByMessageId({});
       setConfigError(null);
     } catch {
       // Ignore clear errors
     }
   }
 
-  function onFormSubmit(e: React.FormEvent) {
+  async function onFormSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!input.trim()) return;
     setConfigError(null);
-    handleSubmit(e);
+    const contextForRequest = pendingReplyContext;
+    await handleSubmit(e, {
+      body: {
+        projectId,
+        replyContext: contextForRequest,
+      },
+    });
+
+    if (contextForRequest) {
+      setPendingSubmittedReplyContext(contextForRequest);
+      setMessages((current) => attachReplyContextToLatestUserMessage(current, contextForRequest));
+      setPendingReplyContext(undefined);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -150,6 +244,18 @@ export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: Agent
   }
 
   const displayError = configError ?? (error ? error.message : null);
+  const replyPreview = pendingReplyContext
+    ? truncatePreview(pendingReplyContext.notificationMessage)
+    : null;
+  const activeReplyContext = isLoading
+    ? (() => {
+        const latestUserMessage = [...messages].reverse().find((message) => message.role === 'user');
+        if (!latestUserMessage?.id) return null;
+        return replyContextByMessageId[latestUserMessage.id]
+          ?? (latestUserMessage as ChatMessageWithContext).replyContext
+          ?? null;
+      })()
+    : null;
 
   return (
     <div className="flex h-full flex-col border-l border-stone-200 bg-stone-50">
@@ -203,6 +309,10 @@ export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: Agent
               key={message.id}
               role={message.role as 'user' | 'assistant'}
               content={message.content}
+              replyContext={
+                (message.id ? replyContextByMessageId[message.id] : undefined)
+                ?? (message as ChatMessageWithContext).replyContext
+              }
               toolInvocations={
                 'toolInvocations' in message
                   ? (message.toolInvocations as Parameters<typeof AgentMessage>[0]['toolInvocations'])
@@ -212,6 +322,17 @@ export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: Agent
           ))
         )}
       </div>
+
+      {activeReplyContext && (
+        <div className="mx-4 mb-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+            AI is replying to this notification
+          </p>
+          <p className="line-clamp-2 text-xs text-sky-900/90">
+            {truncatePreview(activeReplyContext.notificationMessage, 140)}
+          </p>
+        </div>
+      )}
 
       {/* Error display */}
       {displayError && (
@@ -232,6 +353,25 @@ export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: Agent
 
       {/* Input */}
       <form onSubmit={onFormSubmit} className="border-t border-stone-200 bg-white p-3">
+        {pendingReplyContext && (
+          <div className="mb-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-violet-700">
+                Replying to notification
+              </p>
+              <button
+                type="button"
+                onClick={() => setPendingReplyContext(undefined)}
+                className="rounded-md px-2 py-0.5 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-100"
+                title="Stop replying to this notification"
+              >
+                Remove context
+              </button>
+            </div>
+            <p className="line-clamp-3 text-xs text-violet-900/90">{replyPreview}</p>
+          </div>
+        )}
+
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
@@ -239,7 +379,11 @@ export function AgentSidebar({ projectId, onClose, isOpen, initialInput }: Agent
             onChange={handleInputChange}
             onInput={handleAutoResize}
             onKeyDown={handleKeyDown}
-            placeholder="Describe a goal or ask about tasks…"
+            placeholder={
+              pendingReplyContext
+                ? 'Write your reply about this notification…'
+                : 'Describe a goal or ask about tasks…'
+            }
             rows={1}
             className={cn(
               'max-h-24 min-h-[38px] flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm',

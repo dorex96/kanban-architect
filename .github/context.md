@@ -4,14 +4,14 @@
 
 ## Current State
 
-- **Phase:** Weekly AI project-state check full-stack integration in progress, with notifications soft delete now implemented end-to-end (DB `deletedAt`, API delete endpoints, optimistic UI delete actions, and backend notification tests).
+- **Phase:** Weekly AI project-state check full-stack integration in progress, with notifications soft delete and contextual "Reply in Chat" now implemented end-to-end (notification metadata is passed to `/agent/run` so the AI can treat the next user message as a direct reply to that notification).
 - **Package manager:** npm 11.10.0 with workspaces
 - **Node version:** 22.19.0
-- **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), board view at `/board/[projectId]` with DnD columns, `useProjects` + `useBoard` SWR hooks, `lib/api.ts` client. Agent chat sidebar via `BoardWithSidebar` + `AgentSidebar` + `AgentMessage` + `ThoughtProcess` components, using `useChat` from `@ai-sdk/react`.
-- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Agent streaming endpoint (`POST /agent/run` with useChat-compatible messages format), chat history endpoints (`GET/DELETE /agent/messages`), agent logs (`GET /agent/logs`), internal deterministic check endpoint (`POST /internal/task-health/run-once`), weekly-check internal endpoints (`POST /internal/weekly-project-check/run-once` with optional `projectId`, `GET /internal/weekly-project-check/history?projectId=&limit=`), Prisma client, Zod config. Streamed agent errors now return specific messages to the client (instead of generic text). Agent tools and system prompt now expose task `priority`, `startDate`, and `endDate`, so the AI can read, set, reschedule, and clear task timing metadata. Deterministic in-app scheduler is controlled via env vars and runs deadline/workload checks with notification dedupe. Weekly-check service applies immediate retry/backoff (1s, 3s by default) for transient LLM failures. **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common`.
+- **`apps/web/`:** Next.js 14.2 with Tailwind, project list at `/` (add/rename/delete), board view at `/board/[projectId]` with DnD columns, `useProjects` + `useBoard` SWR hooks, `lib/api.ts` client. Agent chat sidebar via `BoardWithSidebar` + `AgentSidebar` + `AgentMessage` + `ThoughtProcess` components, using `useChat` from `@ai-sdk/react`. Notification replies now show an in-chat visual context banner (with dismiss action) before sending, a persisted "Reply to notification" snapshot inside user chat history bubbles, and a live "AI is replying to this notification" indicator while response streaming is in progress. Markdown rendering is now unified across assistant chat, task detail modal, and notification modal via a shared `react-markdown` renderer with GFM and newline support.
+- **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Agent streaming endpoint (`POST /agent/run` with useChat-compatible messages format), chat history endpoints (`GET/DELETE /agent/messages`), agent logs (`GET /agent/logs`), internal deterministic check endpoint (`POST /internal/task-health/run-once`), weekly-check internal endpoints (`POST /internal/weekly-project-check/run-once` with optional `projectId`, `GET /internal/weekly-project-check/history?projectId=&limit=`), Prisma client, Zod config. Streamed agent errors now return specific messages to the client (instead of generic text). Agent tools and system prompt now expose task `priority`, `startDate`, and `endDate`, so the AI can read, set, reschedule, and clear task timing metadata. Deterministic in-app scheduler is controlled via env vars and runs deadline/workload checks with notification dedupe. Weekly-check service applies immediate retry/backoff (1s, 3s by default) for transient LLM failures. Reply-context injection now includes an ambiguity guard that prevents bulk task updates from short follow-ups like "Implementato". **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common`.
 - **Notifications dedupe restoration (2026-04-29):** reintroduced task-specific dedupe (`Notification.taskId` + `SentNotificationLog`) with a clean Prisma migration, regenerated client, and restored task-health per-task pending/daily-limit checks.
 - **Notification same-day resend behavior fix (2026-04-29):** daily task dedupe now checks active notifications (`deletedAt: null`) created in the same UTC day. If a deadline notification is soft-deleted, it can be re-sent the same day; if it is not deleted, same-day re-send remains blocked.
-- **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`, `WeeklyProjectCheckBatchSummary`, `WeeklyProjectCheckRunItem`.
+- **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`, `NotificationReplyContext`, `WeeklyProjectCheckBatchSummary`, `WeeklyProjectCheckRunItem`.
 - **Database:** PostgreSQL via local install. Prisma schema with 7 models (Project, Task, Event, AgentLog, ChatMessage, Notification, WeeklyProjectCheckRun), migrations applied.
 - **README:** Includes a clear "Project Status: Work in Progress" section for public-repo expectations.
 
@@ -30,14 +30,14 @@
 | KanbanBoard + DnD | DONE | `apps/web/app/board/[projectId]/page.tsx`, `components/board/KanbanBoard.tsx`, `KanbanColumn.tsx`, `TaskCard.tsx`, `AddTaskInline.tsx`, `hooks/useBoard.ts` |
 | Agent tools layer | DONE | `apps/api/src/features/agent/agent.tools.ts` |
 | Agent coordinator + SSE | DONE | `apps/api/src/features/agent/agent.coordinator.ts`, `agent.router.ts`, `agent.prompts.ts` |
-| Agent chat persistence | DONE | `apps/api/prisma/migrations/20260416230000_add_chat_messages/` |
+| Agent chat persistence | DONE | `apps/api/prisma/migrations/20260416230000_add_chat_messages/`, `apps/api/prisma/migrations/20260426123000_add_chat_message_reply_context/` |
 | AgentSidebar + ThoughtProcess | DONE | `apps/web/components/agent/AgentSidebar.tsx`, `AgentMessage.tsx`, `ThoughtProcess.tsx`, `components/board/BoardWithSidebar.tsx` |
 | Deterministic task-health scheduler (deadline/workload checks) | IN PROGRESS | `apps/api/src/features/task-health/task-health.service.ts`, `task-health.scheduler.ts`, `task-health.router.ts`, `apps/api/src/config.ts`, `apps/api/.env.example` |
 | Weekly AI project-state check (backend) | IN PROGRESS | `apps/api/src/features/weekly-project-check/`, `apps/api/src/features/agent/providers/base.ts`, `apps/api/prisma/schema.prisma`, `apps/api/prisma/migrations/20260423101500_add_weekly_project_check_run/` |
 | Weekly-check web integration | IN PROGRESS | `apps/web/components/board/BoardPageClient.tsx`, `apps/web/hooks/useWeeklyProjectCheck.ts`, `apps/web/components/notifications/WeeklyCheckHistoryPanel.tsx`, `apps/web/components/notifications/NotificationModal.tsx` |
 | Notifications soft delete (single + bulk read) | DONE | `apps/api/prisma/migrations/20260425114542_notification_soft_delete/`, `apps/api/src/features/notifications/`, `apps/web/hooks/useNotifications.ts`, `apps/web/components/notifications/NotificationBell.tsx`, `NotificationPanel.tsx`, `NotificationModal.tsx` |
 | Task-health notification schema compatibility + per-task dedupe restoration | DONE | `apps/api/prisma/schema.prisma`, `apps/api/prisma/migrations/20260429123834_reintroduce_task_notification_dedup/migration.sql`, `apps/api/src/features/notifications/notifications.service.ts`, `apps/api/src/features/task-health/task-health.service.ts`, `apps/api/src/features/notifications/notifications.service.test.ts` |
-| Chat UI improvements | DONE | Markdown rendering in agent messages, responsive sidebar (mobile overlay + desktop panel with slide transition), auto-resize textarea, typing indicator animation |
+| Chat UI improvements | DONE | Shared Markdown rendering in assistant chat, task detail modal, and notification modal; responsive sidebar (mobile overlay + desktop panel with slide transition), auto-resize textarea, typing indicator animation |
 | Docker compose (working) | DONE | `docker-compose.yml` (PostgreSQL 16, optional — local PG used) |
 | API tests (weekly-check slice) | DONE | `apps/api/src/features/weekly-project-check/*.test.ts`, `apps/api/vitest.config.ts` |
 
@@ -54,7 +54,8 @@
 | `swr` | `apps/web` | ^2.2.0 | Data fetching + optimistic updates |
 | `@hello-pangea/dnd` | `apps/web` | ^17.0.0 | Drag and drop |
 | `ai`, `@ai-sdk/react` | `apps/web` | ^4.1.0, ^1.1.0 | `useChat` for SSE streaming |
-| `react-markdown` | `apps/web` | ^9.x | Markdown rendering in agent messages |
+| `react-markdown` | `apps/web` | 10.1.0 | Shared Markdown rendering in chat and modals |
+| `remark-breaks` | `apps/web` | 4.0.0 | Preserve chat-style line breaks in Markdown rendering |
 | `remark-gfm` | `apps/web` | ^4.x | GitHub-flavored markdown support |
 | `clsx`, `tailwind-merge` | `apps/web` | ^2.1.0, ^2.6.0 | `cn()` utility |
 | `hono`, `@hono/node-server` | `apps/api` | ^4.6.0, ^1.13.0 | HTTP framework |
@@ -137,11 +138,13 @@
 `apps/web/components/agent/AgentSidebar.tsx` → Client component: chat sidebar with useChat, DB-persisted message history, SWR board revalidation
 `apps/web/components/agent/AgentMessage.tsx` → Client component: single chat bubble (user/assistant), renders ThoughtProcess for tool calls
 `apps/web/components/agent/ThoughtProcess.tsx` → Client component: expandable tool-call cards with status indicators, color-coded by tool type
+`apps/web/components/shared/MarkdownContent.tsx` → Shared Markdown renderer for assistant chat and modal previews/content (`react-markdown` + GFM + soft line breaks)
 `apps/api/src/features/task-health/task-health.service.ts` → Deterministic task-health checks (deadline soon, overdue, workload thresholds) with deduped notification creation
 `apps/api/src/features/task-health/task-health.scheduler.ts` → Env-toggled in-app scheduler bootstrap (`start`, `stop`, `runOnce`) with overlap guard and cycle logging
 `apps/api/src/features/task-health/task-health.router.ts` → Internal endpoint `POST /internal/task-health/run-once` to trigger one deterministic check cycle
 `apps/api/src/features/agent/agent.prompts.ts` → System prompt template builder (plain text, no logic)
 `apps/api/prisma/migrations/20260416230000_add_chat_messages/migration.sql` → Migration adding ChatMessage table for chat persistence
+`apps/api/prisma/migrations/20260426123000_add_chat_message_reply_context/migration.sql` → Migration adding ChatMessage.replyContext JSON snapshot for notification-reply history
 `apps/api/src/features/agent/providers/base.ts` → Shared LLM provider/model selector (`LLM_PROVIDER`) + configuration error type
 `apps/api/src/features/weekly-project-check/weekly-project-check.prompts.ts` → Structured weekly analysis prompt and truncation guardrail
 `apps/api/src/features/weekly-project-check/weekly-project-check.service.ts` → Weekly batch logic (collect data, call LLM with retry/backoff, create Markdown notification, persist run log, expose history query)
