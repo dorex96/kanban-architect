@@ -23,6 +23,7 @@ model Project {
   agentLogs     AgentLog[]
   chatMessages  ChatMessage[]
   notifications Notification[]
+  sentNotificationLogs SentNotificationLog[]
   weeklyChecks  WeeklyProjectCheckRun[]
 }
 
@@ -50,6 +51,8 @@ model Task {
   createdAt     DateTime   @default(now())
   project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   events        Event[]
+  notifications Notification[]
+  sentNotificationLogs SentNotificationLog[]
 
   @@index([projectId])
 }
@@ -84,6 +87,7 @@ model ChatMessage {
   projectId String
   role      String
   content   String
+  replyContext Json?
   createdAt DateTime @default(now())
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -93,6 +97,7 @@ model ChatMessage {
 model Notification {
   id        String    @id @default(cuid())
   projectId String
+  taskId    String?
   message   String
   isRead    Boolean   @default(false)
   reply     String?
@@ -100,9 +105,24 @@ model Notification {
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task      Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([projectId, deletedAt])
+  @@index([taskId, isRead, deletedAt])
+}
+
+model SentNotificationLog {
+  id        String   @id @default(cuid())
+  taskId    String
+  projectId String
+  sentDate  String
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, sentDate])
+  @@index([projectId])
 }
 
 model WeeklyProjectCheckRun {

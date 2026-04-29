@@ -68,11 +68,18 @@ export interface Project {
 export interface Notification {
   id: string;
   projectId: string;
+  taskId: string | null;
   message: string;
   isRead: boolean;
   reply: string | null;
   repliedAt: string | null;
   createdAt: string;
+}
+
+export interface NotificationReplyContext {
+  notificationId: string;
+  notificationMessage: string;
+  notificationCreatedAt: string;
 }
 
 export interface Event {

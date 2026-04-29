@@ -3,147 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { Task } from '@kanban/types';
+import { MarkdownContent } from '@/components/shared/MarkdownContent';
 import { cn } from '@/lib/utils';
-
-// ---------------------------------------------------------------------------
-// Lightweight markdown renderer — no external deps
-// Handles: headings, bold, italic, inline code, fenced code blocks,
-//          unordered/ordered lists, blockquotes, links, hr, paragraphs.
-// ---------------------------------------------------------------------------
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function parseInline(text: string): string {
-  return escapeHtml(text)
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-}
-
-function MarkdownRenderer({ content }: { content: string }) {
-  const lines = content.split('\n');
-  const nodes: React.ReactNode[] = [];
-  let i = 0;
-  let key = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Fenced code block
-    if (line.startsWith('```')) {
-      let end = i + 1;
-      while (end < lines.length && !lines[end].startsWith('```')) end++;
-      const code = lines.slice(i + 1, end).join('\n');
-      nodes.push(<pre key={key++}><code>{code}</code></pre>);
-      i = end < lines.length ? end + 1 : lines.length;
-      continue;
-    }
-
-    // Horizontal rule
-    if (/^-{3,}$/.test(line.trim())) {
-      nodes.push(<hr key={key++} />);
-      i++;
-      continue;
-    }
-
-    // Headings
-    if (line.startsWith('### ')) {
-      nodes.push(<h3 key={key++} dangerouslySetInnerHTML={{ __html: parseInline(line.slice(4)) }} />);
-      i++; continue;
-    }
-    if (line.startsWith('## ')) {
-      nodes.push(<h2 key={key++} dangerouslySetInnerHTML={{ __html: parseInline(line.slice(3)) }} />);
-      i++; continue;
-    }
-    if (line.startsWith('# ')) {
-      nodes.push(<h1 key={key++} dangerouslySetInnerHTML={{ __html: parseInline(line.slice(2)) }} />);
-      i++; continue;
-    }
-
-    // Blockquote
-    if (line.startsWith('> ')) {
-      const quoteLines: string[] = [];
-      while (i < lines.length && lines[i].startsWith('> ')) {
-        quoteLines.push(lines[i].slice(2));
-        i++;
-      }
-      nodes.push(
-        <blockquote key={key++} dangerouslySetInnerHTML={{ __html: parseInline(quoteLines.join(' ')) }} />,
-      );
-      continue;
-    }
-
-    // Unordered list
-    if (/^[-*] /.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^[-*] /.test(lines[i])) {
-        items.push(lines[i].slice(2));
-        i++;
-      }
-      nodes.push(
-        <ul key={key++}>
-          {items.map((item, j) => (
-            <li key={j} dangerouslySetInnerHTML={{ __html: parseInline(item) }} />
-          ))}
-        </ul>,
-      );
-      continue;
-    }
-
-    // Ordered list
-    if (/^\d+\. /.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^\d+\. /.test(lines[i])) {
-        items.push(lines[i].replace(/^\d+\. /, ''));
-        i++;
-      }
-      nodes.push(
-        <ol key={key++}>
-          {items.map((item, j) => (
-            <li key={j} dangerouslySetInnerHTML={{ __html: parseInline(item) }} />
-          ))}
-        </ol>,
-      );
-      continue;
-    }
-
-    // Empty line
-    if (line.trim() === '') {
-      i++;
-      continue;
-    }
-
-    // Paragraph — collect consecutive "plain" lines
-    const paraLines: string[] = [];
-    while (
-      i < lines.length &&
-      lines[i].trim() !== '' &&
-      !/^#{1,6} /.test(lines[i]) &&
-      !/^> /.test(lines[i]) &&
-      !/^[-*] /.test(lines[i]) &&
-      !/^\d+\. /.test(lines[i]) &&
-      !lines[i].startsWith('```') &&
-      !/^-{3,}$/.test(lines[i].trim())
-    ) {
-      paraLines.push(lines[i]);
-      i++;
-    }
-    if (paraLines.length > 0) {
-      nodes.push(
-        <p key={key++} dangerouslySetInnerHTML={{ __html: parseInline(paraLines.join('\n').replace(/\n/g, '<br/>')) }} />,
-      );
-    }
-  }
-
-  return <div className="markdown text-sm">{nodes}</div>;
-}
 
 // ---------------------------------------------------------------------------
 // Priority config
@@ -301,7 +162,7 @@ export function TaskDetailModal({ task, onSave, onUpdateMeta, onClose }: TaskDet
         {mode === 'view' ? (
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             {task.description.trim() ? (
-              <MarkdownRenderer content={task.description} />
+              <MarkdownContent content={task.description} className="text-sm" />
             ) : (
               <p className="text-sm italic text-stone-400">No description yet. Click Edit to add one.</p>
             )}
@@ -330,7 +191,7 @@ export function TaskDetailModal({ task, onSave, onUpdateMeta, onClose }: TaskDet
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                 {draft.trim() ? (
-                  <MarkdownRenderer content={draft} />
+                  <MarkdownContent content={draft} className="text-sm" />
                 ) : (
                   <p className="text-sm italic text-stone-300">Preview will appear here…</p>
                 )}

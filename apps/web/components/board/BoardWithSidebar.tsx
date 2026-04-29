@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Task } from '@kanban/types';
+import type { NotificationReplyContext, Task } from '@kanban/types';
 import { cn } from '@/lib/utils';
 import { KanbanBoard } from './KanbanBoard';
 import { AgentSidebar } from '../agent/AgentSidebar';
@@ -12,6 +12,7 @@ interface BoardWithSidebarProps {
   sidebarOpen?: boolean;
   onToggleSidebar?: (open: boolean) => void;
   prefillInput?: string;
+  replyContext?: NotificationReplyContext;
 }
 
 export function BoardWithSidebar({
@@ -20,6 +21,7 @@ export function BoardWithSidebar({
   sidebarOpen: controlledOpen,
   onToggleSidebar,
   prefillInput,
+  replyContext,
 }: BoardWithSidebarProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const sidebarOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
@@ -60,6 +62,7 @@ export function BoardWithSidebar({
           onClose={() => setSidebarOpen(false)}
           isOpen={sidebarOpen}
           initialInput={prefillInput}
+          replyContext={replyContext}
         />
       </div>
 

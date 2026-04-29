@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   notificationFindFirst: vi.fn(),
   notificationUpdate: vi.fn(),
   notificationUpdateMany: vi.fn(),
+  sentNotificationLogFindFirst: vi.fn(),
+  sentNotificationLogUpsert: vi.fn(),
   chatMessageCreate: vi.fn(),
   transaction: vi.fn(),
   logEvent: vi.fn(),
@@ -20,6 +22,10 @@ vi.mock('../../lib/prisma.js', () => ({
       update: mocks.notificationUpdate,
       updateMany: mocks.notificationUpdateMany,
     },
+    sentNotificationLog: {
+      findFirst: mocks.sentNotificationLogFindFirst,
+      upsert: mocks.sentNotificationLogUpsert,
+    },
     chatMessage: {
       create: mocks.chatMessageCreate,
     },
@@ -32,6 +38,9 @@ vi.mock('../events/events.service.js', () => ({
 }));
 
 import {
+  createNotification,
+  hasDailyTaskNotification,
+  hasPendingTaskNotification,
   listNotifications,
   markAsRead,
   replyToNotification,
@@ -51,6 +60,7 @@ describe('notifications.service', () => {
       {
         id: 'n1',
         projectId: 'p1',
+        taskId: null,
         message: 'hello',
         isRead: false,
         reply: null,
@@ -73,6 +83,7 @@ describe('notifications.service', () => {
     const activeRows: Array<{
       id: string;
       projectId: string;
+      taskId: string | null;
       message: string;
       isRead: boolean;
       reply: string | null;
@@ -83,6 +94,7 @@ describe('notifications.service', () => {
       {
         id: 'n1',
         projectId: 'p1',
+        taskId: null,
         message: 'one',
         isRead: false,
         reply: null,
@@ -148,5 +160,104 @@ describe('notifications.service', () => {
     const call = replyToNotification('missing', 'reply');
     await expect(call).rejects.toBeInstanceOf(HttpError);
     await expect(call).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('hasPendingTaskNotification returns true when an unread non-deleted notification exists', async () => {
+    mocks.notificationFindFirst.mockResolvedValue({ id: 'n1' });
+
+    const result = await hasPendingTaskNotification('task-1');
+
+    expect(mocks.notificationFindFirst).toHaveBeenCalledWith({
+      where: { taskId: 'task-1', isRead: false, deletedAt: null },
+      select: { id: true },
+    });
+    expect(result).toBe(true);
+  });
+
+  it('hasDailyTaskNotification returns true when an active notification exists in the given UTC day', async () => {
+    mocks.notificationFindFirst.mockResolvedValue({ id: 'n1' });
+
+    const result = await hasDailyTaskNotification('task-1', '2026-04-28');
+
+    expect(mocks.notificationFindFirst).toHaveBeenCalledWith({
+      where: {
+        taskId: 'task-1',
+        deletedAt: null,
+        createdAt: {
+          gte: new Date('2026-04-28T00:00:00.000Z'),
+          lt: new Date('2026-04-29T00:00:00.000Z'),
+        },
+      },
+      select: { id: true },
+    });
+    expect(result).toBe(true);
+  });
+
+  it('hasDailyTaskNotification ignores deleted notifications from the same day', async () => {
+    mocks.notificationFindFirst.mockResolvedValue(null);
+
+    const result = await hasDailyTaskNotification('task-1', '2026-04-28');
+
+    expect(mocks.notificationFindFirst).toHaveBeenCalledWith({
+      where: {
+        taskId: 'task-1',
+        deletedAt: null,
+        createdAt: {
+          gte: new Date('2026-04-28T00:00:00.000Z'),
+          lt: new Date('2026-04-29T00:00:00.000Z'),
+        },
+      },
+      select: { id: true },
+    });
+    expect(result).toBe(false);
+  });
+
+  it('createNotification with taskId upserts a SentNotificationLog entry', async () => {
+    const now = new Date('2026-04-28T15:00:00.000Z');
+    vi.setSystemTime(now);
+
+    mocks.notificationCreate.mockResolvedValue({
+      id: 'n1',
+      projectId: 'p1',
+      taskId: 'task-1',
+      message: 'Task is overdue',
+      isRead: false,
+      reply: null,
+      repliedAt: null,
+      createdAt: now,
+    });
+    mocks.sentNotificationLogUpsert.mockResolvedValue({});
+
+    const notification = await createNotification('p1', 'Task is overdue', 'task-1');
+
+    expect(mocks.notificationCreate).toHaveBeenCalledWith({
+      data: { projectId: 'p1', message: 'Task is overdue', taskId: 'task-1' },
+    });
+    expect(mocks.sentNotificationLogUpsert).toHaveBeenCalledWith({
+      where: { taskId_sentDate: { taskId: 'task-1', sentDate: '2026-04-28' } },
+      create: { taskId: 'task-1', projectId: 'p1', sentDate: '2026-04-28' },
+      update: {},
+    });
+    expect(notification.taskId).toBe('task-1');
+
+    vi.useRealTimers();
+  });
+
+  it('createNotification without taskId does not write a SentNotificationLog entry', async () => {
+    mocks.notificationCreate.mockResolvedValue({
+      id: 'n2',
+      projectId: 'p1',
+      taskId: null,
+      message: 'Workload alert',
+      isRead: false,
+      reply: null,
+      repliedAt: null,
+      createdAt: new Date(),
+    });
+
+    const notification = await createNotification('p1', 'Workload alert');
+
+    expect(mocks.sentNotificationLogUpsert).not.toHaveBeenCalled();
+    expect(notification.taskId).toBeNull();
   });
 });

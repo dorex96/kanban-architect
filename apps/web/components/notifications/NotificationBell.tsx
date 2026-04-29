@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { Notification } from '@kanban/types';
+import type { Notification, NotificationReplyContext } from '@kanban/types';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationPanel } from './NotificationPanel';
 import { NotificationModal } from './NotificationModal';
@@ -10,7 +10,7 @@ import { NotificationModal } from './NotificationModal';
 interface NotificationBellProps {
   projectId: string;
   fallbackData?: Notification[];
-  onOpenSidebar: (prefill?: string) => void;
+  onOpenSidebar: (prefill?: string, replyContext?: NotificationReplyContext) => void;
 }
 
 export function NotificationBell({ projectId, fallbackData, onOpenSidebar }: NotificationBellProps) {

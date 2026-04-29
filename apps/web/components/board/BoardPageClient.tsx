@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import type { Notification, Task } from '@kanban/types';
+import type { Notification, NotificationReplyContext, Task } from '@kanban/types';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useWeeklyProjectCheck } from '@/hooks/useWeeklyProjectCheck';
 import { BoardWithSidebar } from './BoardWithSidebar';
@@ -24,6 +24,7 @@ export function BoardPageClient({
 }: BoardPageClientProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [prefillInput, setPrefillInput] = useState('');
+  const [replyContext, setReplyContext] = useState<NotificationReplyContext | undefined>(undefined);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [isRunningCheck, setIsRunningCheck] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
@@ -31,14 +32,18 @@ export function BoardPageClient({
   const notifications = useNotifications(projectId, fallbackNotifications);
   const weeklyCheck = useWeeklyProjectCheck(projectId);
 
-  const handleOpenSidebar = (prefill = '') => {
+  const handleOpenSidebar = (prefill = '', nextReplyContext?: NotificationReplyContext) => {
     setSidebarOpen(true);
     setPrefillInput(prefill);
+    setReplyContext(nextReplyContext);
   };
 
   const handleToggleSidebar = (open: boolean) => {
     setSidebarOpen(open);
-    if (!open) setPrefillInput('');
+    if (!open) {
+      setPrefillInput('');
+      setReplyContext(undefined);
+    }
   };
 
   const handleRunWeeklyCheck = async () => {
@@ -110,6 +115,7 @@ export function BoardPageClient({
           sidebarOpen={sidebarOpen}
           onToggleSidebar={handleToggleSidebar}
           prefillInput={prefillInput}
+          replyContext={replyContext}
         />
       </div>
     </main>
