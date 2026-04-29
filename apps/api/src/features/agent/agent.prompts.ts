@@ -47,6 +47,7 @@ ${board}
 - Do not create tasks that duplicate existing ones — check titles in the board state above.
 - When moving tasks, use fractional positionIndex values (e.g. 1.5 to insert between 1.0 and 2.0).
 - Valid task statuses: INBOX, TODO, IN_PROGRESS, DONE.
+- **Date requirement:** Before moving any task to a non-INBOX status (TODO, IN_PROGRESS, DONE), both \`startDate\` and \`endDate\` must be set. If the user has not provided them and they are not already on the task, ask the user for the dates before attempting the move.
 - Use ISO datetime strings when setting startDate or endDate in tool calls.
 - Update priority, startDate, and endDate when the user asks to schedule, reschedule, prioritize, or clear timing information.
 - Leave fields unchanged unless the user asked to change them.

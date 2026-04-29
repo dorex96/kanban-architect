@@ -40,6 +40,12 @@ export async function createTask(
   return toTask(task);
 }
 
+export async function getTask(id: string): Promise<Task> {
+  const row = await prisma.task.findUnique({ where: { id } });
+  if (!row) throw new HttpError(404, 'Task not found');
+  return toTask(row);
+}
+
 export async function updateTask(
   id: string,
   data: {
@@ -53,6 +59,15 @@ export async function updateTask(
 ): Promise<Task> {
   const existing = await prisma.task.findUnique({ where: { id } });
   if (!existing) throw new HttpError(404, 'Task not found');
+
+  // Enforce that startDate + endDate are set when moving INBOX → TODO
+  if (existing.status === 'INBOX' && data.status === 'TODO') {
+    const effectiveStart = data.startDate !== undefined ? data.startDate : (existing.startDate?.toISOString() ?? null);
+    const effectiveEnd = data.endDate !== undefined ? data.endDate : (existing.endDate?.toISOString() ?? null);
+    if (!effectiveStart || !effectiveEnd) {
+      throw new HttpError(422, 'Task must have startDate and endDate before moving to TODO');
+    }
+  }
 
   const { startDate, endDate, ...rest } = data;
   const prismaData: Record<string, unknown> = { ...rest };

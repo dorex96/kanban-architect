@@ -70,6 +70,7 @@ export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
     fallbackTasks,
   );
   const [columnSorts, setColumnSorts] = useState<ColumnSortState>(createInitialSortState);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   function handleSortByChange(status: TaskStatus, value: SortBy) {
     setColumnSorts((prev) => ({
@@ -128,11 +129,30 @@ export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
       newPositionIndex = (before + after) / 2;
     }
 
-    moveTask(draggableId, newStatus, newPositionIndex);
+    moveTask(draggableId, newStatus, newPositionIndex).then((result) => {
+      if (result?.blocked) {
+        setValidationError(result.reason);
+        setTimeout(() => setValidationError(null), 6000);
+      }
+    });
   }
 
   return (
     <div className="flex h-full flex-col">
+      {validationError && (
+        <div className="mx-6 mt-4 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+          <span>{validationError}</span>
+          <button
+            onClick={() => setValidationError(null)}
+            className="ml-4 shrink-0 rounded p-0.5 hover:bg-amber-100"
+            aria-label="Dismiss"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="bg-board-canvas flex flex-1 gap-4 overflow-x-auto p-6">
           {STATUSES.map((status) => {

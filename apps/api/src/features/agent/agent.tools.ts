@@ -2,6 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import {
   listTasks,
+  getTask,
   createTask,
   updateTask,
   deleteTask,
@@ -58,7 +59,7 @@ export function createAgentTools(projectId: string) {
 
     update_task: tool({
       description:
-        'Update a task\'s title, description, status, priority, or schedule. Provide only the fields to change and use null to clear dates.',
+        'Update a task\'s title, description, status, priority, or schedule. Provide only the fields to change and use null to clear dates. IMPORTANT: if changing status to any non-INBOX value, startDate and endDate must both be set (either already on the task or provided in this call).',
       parameters: z.object({
         taskId: z.string().describe('ID of the task to update'),
         title: z.string().optional().describe('New title'),
@@ -70,6 +71,18 @@ export function createAgentTools(projectId: string) {
       }),
       execute: async ({ taskId, title, description, status, priority, startDate, endDate }) => {
         try {
+          // Enforce dates when moving to any non-INBOX status
+          if (status !== undefined && status !== 'INBOX') {
+            const existing = await getTask(taskId);
+            const effectiveStart = startDate !== undefined ? startDate : existing.startDate;
+            const effectiveEnd = endDate !== undefined ? endDate : existing.endDate;
+            if (!effectiveStart || !effectiveEnd) {
+              return {
+                success: false as const,
+                error: `Cannot move task to ${status}: both startDate and endDate must be set. Please ask the user for the missing dates before proceeding.`,
+              };
+            }
+          }
           const data: Record<string, unknown> = {};
           if (title !== undefined) data.title = title;
           if (description !== undefined) data.description = description;
@@ -87,7 +100,7 @@ export function createAgentTools(projectId: string) {
 
     move_task: tool({
       description:
-        'Move a task to a different status column at a specific position. Use fractional positionIndex values (e.g. 1.5 to insert between 1.0 and 2.0).',
+        'Move a task to a different status column at a specific position. Use fractional positionIndex values (e.g. 1.5 to insert between 1.0 and 2.0). IMPORTANT: if the target status is not INBOX, both startDate and endDate must be set on the task. If they are not set, ask the user for the dates before calling this tool.',
       parameters: z.object({
         taskId: z.string().describe('ID of the task to move'),
         status: taskStatusEnum.describe('Target status column'),
@@ -95,6 +108,16 @@ export function createAgentTools(projectId: string) {
       }),
       execute: async ({ taskId, status, positionIndex }) => {
         try {
+          // Enforce dates when moving to any non-INBOX status
+          if (status !== 'INBOX') {
+            const existing = await getTask(taskId);
+            if (!existing.startDate || !existing.endDate) {
+              return {
+                success: false as const,
+                error: `Cannot move task to ${status}: both startDate and endDate must be set. Please ask the user for the missing dates before proceeding.`,
+              };
+            }
+          }
           await updateTask(taskId, { status });
           const task = await reorderTask(taskId, positionIndex);
           return { success: true as const, task };

@@ -111,9 +111,19 @@ export function useBoard(projectId: string, fallbackTasks?: Task[]) {
     taskId: string,
     newStatus: TaskStatus,
     newPositionIndex: number,
-  ) {
+  ): Promise<{ blocked: true; reason: string } | undefined> {
     const task = flattenBoard(board).find((t) => t.id === taskId);
     if (!task) return;
+
+    // Block INBOX → TODO if dates are missing
+    if (task.status === 'INBOX' && newStatus === 'TODO') {
+      if (!task.startDate || !task.endDate) {
+        return {
+          blocked: true,
+          reason: 'This task needs a start date and end date before it can move to TODO. Open the task card to set them.',
+        };
+      }
+    }
 
     const moved = { ...task, status: newStatus, positionIndex: newPositionIndex };
 
