@@ -6,9 +6,12 @@ import type { Task, TaskStatus } from '@kanban/types';
 import { useBoard } from '@/hooks/useBoard';
 import { KanbanColumn } from './KanbanColumn';
 import { AddTaskInline } from './AddTaskInline';
-import { SortControls, type SortBy, type SortDir } from './SortControls';
+import { type SortBy, type SortDir } from './SortControls';
 
 const STATUSES: TaskStatus[] = ['INBOX', 'TODO', 'IN_PROGRESS', 'DONE'];
+
+type ColumnSort = { sortBy: SortBy; sortDir: SortDir };
+type ColumnSortState = Record<TaskStatus, ColumnSort>;
 
 function getDurationMs(task: Task): number | null {
   if (!task.startDate || !task.endDate) return null;
@@ -52,17 +55,40 @@ interface KanbanBoardProps {
   fallbackTasks: Task[];
 }
 
+function createInitialSortState(): ColumnSortState {
+  return {
+    INBOX: { sortBy: 'position', sortDir: 'asc' },
+    TODO: { sortBy: 'position', sortDir: 'asc' },
+    IN_PROGRESS: { sortBy: 'position', sortDir: 'asc' },
+    DONE: { sortBy: 'position', sortDir: 'asc' },
+  };
+}
+
 export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
   const { board, addTask, renameTask, updateDescription, deleteTask, moveTask, updateTask } = useBoard(
     projectId,
     fallbackTasks,
   );
-  const [sortBy, setSortBy] = useState<SortBy>('position');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [columnSorts, setColumnSorts] = useState<ColumnSortState>(createInitialSortState);
 
-  function handleSortByChange(value: SortBy) {
-    setSortBy(value);
-    if (value === 'position') setSortDir('asc');
+  function handleSortByChange(status: TaskStatus, value: SortBy) {
+    setColumnSorts((prev) => ({
+      ...prev,
+      [status]: {
+        sortBy: value,
+        sortDir: value === 'position' ? 'asc' : prev[status].sortDir,
+      },
+    }));
+  }
+
+  function handleSortDirToggle(status: TaskStatus) {
+    setColumnSorts((prev) => ({
+      ...prev,
+      [status]: {
+        ...prev[status],
+        sortDir: prev[status].sortDir === 'asc' ? 'desc' : 'asc',
+      },
+    }));
   }
 
   function onDragEnd(result: DropResult) {
@@ -70,19 +96,22 @@ export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
 
     if (!destination) return;
 
+    const sourceStatus = source.droppableId as TaskStatus;
+    const sourceSort = columnSorts[sourceStatus];
     const isSameColumn = source.droppableId === destination.droppableId;
 
     // When a non-position sort is active, disallow within-column reordering
     // since visual order is controlled by the sort, not positionIndex
-    if (isSameColumn && sortBy !== 'position') return;
+    if (isSameColumn && sourceSort.sortBy !== 'position') return;
 
     if (isSameColumn && source.index === destination.index) return;
 
     const newStatus = destination.droppableId as TaskStatus;
+    const destinationSort = columnSorts[newStatus];
 
     // Use the same sorted order as the visual column so destination.index
     // correctly maps to the right position when a custom sort is active.
-    const visualColumn = sortTasks(board[newStatus], sortBy, sortDir).filter(
+    const visualColumn = sortTasks(board[newStatus], destinationSort.sortBy, destinationSort.sortDir).filter(
       (t) => t.id !== draggableId,
     );
 
@@ -104,29 +133,28 @@ export function KanbanBoard({ projectId, fallbackTasks }: KanbanBoardProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-3 border-b border-stone-100 bg-white px-6 py-2">
-        <SortControls
-          sortBy={sortBy}
-          sortDir={sortDir}
-          onSortByChange={handleSortByChange}
-          onSortDirToggle={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
-        />
-      </div>
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="bg-board-canvas flex flex-1 gap-4 overflow-x-auto p-6">
-          {STATUSES.map((status) => (
-            <KanbanColumn
-              key={status}
-              status={status}
-              tasks={sortTasks(board[status], sortBy, sortDir)}
-              onRename={renameTask}
-              onDescriptionUpdate={updateDescription}
-              onDelete={deleteTask}
-              onUpdate={updateTask}
-            >
-              {status === 'INBOX' && <AddTaskInline onAdd={addTask} />}
-            </KanbanColumn>
-          ))}
+          {STATUSES.map((status) => {
+            const sort = columnSorts[status];
+            return (
+              <KanbanColumn
+                key={status}
+                status={status}
+                tasks={sortTasks(board[status], sort.sortBy, sort.sortDir)}
+                sortBy={sort.sortBy}
+                sortDir={sort.sortDir}
+                onSortByChange={(value) => handleSortByChange(status, value)}
+                onSortDirToggle={() => handleSortDirToggle(status)}
+                onRename={renameTask}
+                onDescriptionUpdate={updateDescription}
+                onDelete={deleteTask}
+                onUpdate={updateTask}
+              >
+                {status === 'INBOX' && <AddTaskInline onAdd={addTask} />}
+              </KanbanColumn>
+            );
+          })}
         </div>
       </DragDropContext>
     </div>

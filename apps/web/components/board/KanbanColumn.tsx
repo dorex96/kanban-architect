@@ -4,6 +4,7 @@ import { Droppable, Draggable } from '@hello-pangea/dnd';
 import type { Task, TaskStatus } from '@kanban/types';
 import { cn } from '@/lib/utils';
 import { TaskCard } from './TaskCard';
+import { SortControls, type SortBy, type SortDir } from './SortControls';
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
   INBOX: 'Inbox',
@@ -29,6 +30,10 @@ const STATUS_BORDER_COLORS: Record<TaskStatus, string> = {
 interface KanbanColumnProps {
   status: TaskStatus;
   tasks: Task[];
+  sortBy: SortBy;
+  sortDir: SortDir;
+  onSortByChange: (value: SortBy) => void;
+  onSortDirToggle: () => void;
   onRename: (id: string, title: string) => Promise<void>;
   onDescriptionUpdate: (id: string, description: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -39,12 +44,18 @@ interface KanbanColumnProps {
 export function KanbanColumn({
   status,
   tasks,
+  sortBy,
+  sortDir,
+  onSortByChange,
+  onSortDirToggle,
   onRename,
   onDescriptionUpdate,
   onDelete,
   onUpdate,
   children,
 }: KanbanColumnProps) {
+  const canManualReorder = sortBy === 'position';
+
   return (
     <div className={cn('flex w-72 shrink-0 flex-col rounded-xl border border-stone-200 border-t-2 bg-white shadow-sm', STATUS_BORDER_COLORS[status])}>
       <div className="flex items-center gap-2 px-3 pt-3 pb-2">
@@ -58,6 +69,21 @@ export function KanbanColumn({
         </span>
         <span className="ml-auto tabular-nums text-xs text-stone-400">{tasks.length}</span>
       </div>
+
+      <div className="px-3 pb-2">
+        <SortControls
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSortByChange={onSortByChange}
+          onSortDirToggle={onSortDirToggle}
+        />
+      </div>
+
+      {!canManualReorder && (
+        <div className="px-3 pb-2 text-[11px] text-stone-500">
+          Riordino manuale disattivato in questa colonna.
+        </div>
+      )}
 
       {children && <div className="px-2 pb-2">{children}</div>}
 
