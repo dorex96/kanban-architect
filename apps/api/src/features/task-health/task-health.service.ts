@@ -1,6 +1,12 @@
 import type { Task } from '@kanban/types';
 import { config } from '../../config.js';
-import { createNotification, hasRecentNotification } from '../notifications/notifications.service.js';
+import {
+  createNotification,
+  hasDailyTaskNotification,
+  hasPendingTaskNotification,
+  hasRecentNotification,
+  toDateString,
+} from '../notifications/notifications.service.js';
 import { listProjects } from '../projects/projects.service.js';
 import { listTasks } from '../tasks/tasks.service.js';
 
@@ -60,7 +66,7 @@ export async function runTaskHealthCheck(
         if (dueDate < startedAt) {
           const overdueHours = Math.max(1, Math.round((startedAt.getTime() - dueDate.getTime()) / (1000 * 60 * 60)));
           const message = `Task "${task.title}" is overdue by ${overdueHours}h (due ${dueDate.toISOString()}).`;
-          const created = await createDedupedNotification(project.id, message, dedupeSince);
+          const created = await createDedupedNotification(project.id, message, dedupeSince, task.id);
           if (created) summary.createdNotifications += 1;
           else summary.dedupedNotifications += 1;
           continue;
@@ -69,7 +75,7 @@ export async function runTaskHealthCheck(
         if (dueDate <= deadlineLimit) {
           const hoursLeft = Math.max(1, Math.round((dueDate.getTime() - startedAt.getTime()) / (1000 * 60 * 60)));
           const message = `Task "${task.title}" is due in ${hoursLeft}h (${dueDate.toISOString()}).`;
-          const created = await createDedupedNotification(project.id, message, dedupeSince);
+          const created = await createDedupedNotification(project.id, message, dedupeSince, task.id);
           if (created) summary.createdNotifications += 1;
           else summary.dedupedNotifications += 1;
         }
@@ -110,8 +116,26 @@ function buildWorkloadInProgressMessage(inProgressCount: number, threshold: numb
   return `Workload alert: ${inProgressCount} tasks in progress (threshold ${threshold}). Consider splitting or reprioritizing active work.`;
 }
 
-async function createDedupedNotification(projectId: string, message: string, since: Date): Promise<boolean> {
-  const alreadyNotified = await hasRecentNotification(projectId, message, since);
+async function createDedupedNotification(
+  projectId: string,
+  message: string,
+  dedupeSince: Date,
+  taskId?: string,
+): Promise<boolean> {
+  if (taskId) {
+    const isPending = await hasPendingTaskNotification(taskId);
+    if (isPending) return false;
+
+    const today = toDateString(new Date());
+    const sentToday = await hasDailyTaskNotification(taskId, today);
+    if (sentToday) return false;
+
+    await createNotification(projectId, message, taskId);
+    return true;
+  }
+
+  // Workload alerts (project-level, no specific task): keep time-window dedup by message text.
+  const alreadyNotified = await hasRecentNotification(projectId, message, dedupeSince);
   if (alreadyNotified) return false;
 
   await createNotification(projectId, message);
