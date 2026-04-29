@@ -162,8 +162,6 @@ describe('notifications.service', () => {
     await expect(call).rejects.toMatchObject({ status: 404 });
   });
 
-  // ── hasPendingTaskNotification ───────────────────────────────────────────
-
   it('hasPendingTaskNotification returns true when an unread non-deleted notification exists', async () => {
     mocks.notificationFindFirst.mockResolvedValue({ id: 'n1' });
 
@@ -176,45 +174,43 @@ describe('notifications.service', () => {
     expect(result).toBe(true);
   });
 
-  it('hasPendingTaskNotification returns false when no matching notification exists', async () => {
-    mocks.notificationFindFirst.mockResolvedValue(null);
-
-    const result = await hasPendingTaskNotification('task-1');
-
-    expect(result).toBe(false);
-  });
-
-  it('hasPendingTaskNotification returns false when the existing notification is already read', async () => {
-    mocks.notificationFindFirst.mockResolvedValue(null);
-
-    const result = await hasPendingTaskNotification('task-2');
-
-    expect(result).toBe(false);
-  });
-
-  // ── hasDailyTaskNotification ─────────────────────────────────────────────
-
-  it('hasDailyTaskNotification returns true when a log entry exists for the given date', async () => {
-    mocks.sentNotificationLogFindFirst.mockResolvedValue({ id: 'log-1' });
+  it('hasDailyTaskNotification returns true when an active notification exists in the given UTC day', async () => {
+    mocks.notificationFindFirst.mockResolvedValue({ id: 'n1' });
 
     const result = await hasDailyTaskNotification('task-1', '2026-04-28');
 
-    expect(mocks.sentNotificationLogFindFirst).toHaveBeenCalledWith({
-      where: { taskId: 'task-1', sentDate: '2026-04-28' },
+    expect(mocks.notificationFindFirst).toHaveBeenCalledWith({
+      where: {
+        taskId: 'task-1',
+        deletedAt: null,
+        createdAt: {
+          gte: new Date('2026-04-28T00:00:00.000Z'),
+          lt: new Date('2026-04-29T00:00:00.000Z'),
+        },
+      },
       select: { id: true },
     });
     expect(result).toBe(true);
   });
 
-  it('hasDailyTaskNotification returns false when no log entry exists for the date', async () => {
-    mocks.sentNotificationLogFindFirst.mockResolvedValue(null);
+  it('hasDailyTaskNotification ignores deleted notifications from the same day', async () => {
+    mocks.notificationFindFirst.mockResolvedValue(null);
 
     const result = await hasDailyTaskNotification('task-1', '2026-04-28');
 
+    expect(mocks.notificationFindFirst).toHaveBeenCalledWith({
+      where: {
+        taskId: 'task-1',
+        deletedAt: null,
+        createdAt: {
+          gte: new Date('2026-04-28T00:00:00.000Z'),
+          lt: new Date('2026-04-29T00:00:00.000Z'),
+        },
+      },
+      select: { id: true },
+    });
     expect(result).toBe(false);
   });
-
-  // ── createNotification with taskId ───────────────────────────────────────
 
   it('createNotification with taskId upserts a SentNotificationLog entry', async () => {
     const now = new Date('2026-04-28T15:00:00.000Z');

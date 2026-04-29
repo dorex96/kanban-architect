@@ -123,11 +123,9 @@ async function createDedupedNotification(
   taskId?: string,
 ): Promise<boolean> {
   if (taskId) {
-    // State-based deduplication: skip if an unread notification for this task is already pending
     const isPending = await hasPendingTaskNotification(taskId);
     if (isPending) return false;
 
-    // Daily limit: skip if a notification for this task was already sent today
     const today = toDateString(new Date());
     const sentToday = await hasDailyTaskNotification(taskId, today);
     if (sentToday) return false;
@@ -136,7 +134,7 @@ async function createDedupedNotification(
     return true;
   }
 
-  // Workload alerts (project-level, no specific task): keep time-window dedup by message text
+  // Workload alerts (project-level, no specific task): keep time-window dedup by message text.
   const alreadyNotified = await hasRecentNotification(projectId, message, dedupeSince);
   if (alreadyNotified) return false;
 

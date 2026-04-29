@@ -37,8 +37,19 @@ export async function hasPendingTaskNotification(taskId: string): Promise<boolea
 }
 
 export async function hasDailyTaskNotification(taskId: string, date: string): Promise<boolean> {
-  const row = await prisma.sentNotificationLog.findFirst({
-    where: { taskId, sentDate: date },
+  const dayStart = new Date(`${date}T00:00:00.000Z`);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+
+  const row = await prisma.notification.findFirst({
+    where: {
+      taskId,
+      deletedAt: null,
+      createdAt: {
+        gte: dayStart,
+        lt: dayEnd,
+      },
+    },
     select: { id: true },
   });
   return Boolean(row);
@@ -135,12 +146,6 @@ export async function softDeleteReadNotifications(projectId: string): Promise<nu
   return result.count;
 }
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-export function toDateString(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 function toNotification(row: {
   id: string;
   projectId: string;
@@ -161,4 +166,8 @@ function toNotification(row: {
     repliedAt: row.repliedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
   };
+}
+
+export function toDateString(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
