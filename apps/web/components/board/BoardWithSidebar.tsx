@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotificationReplyContext, Task } from '@kanban/types';
 import { cn } from '@/lib/utils';
 import { KanbanBoard } from './KanbanBoard';
 import { AgentSidebar } from '../agent/AgentSidebar';
+
+const MIN_WIDTH = 280;
+const MAX_WIDTH = 800;
+const DEFAULT_WIDTH = 384;
 
 interface BoardWithSidebarProps {
   projectId: string;
@@ -30,6 +34,43 @@ export function BoardWithSidebar({
     else setInternalOpen(open);
   };
 
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(DEFAULT_WIDTH);
+
+  const onMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging.current) return;
+    const delta = startX.current - e.clientX;
+    const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta));
+    setSidebarWidth(newWidth);
+  }, []);
+
+  const onMouseUp = useCallback(() => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [onMouseMove, onMouseUp]);
+
+  function startResize(e: React.MouseEvent) {
+    e.preventDefault();
+    isDragging.current = true;
+    startX.current = e.clientX;
+    startWidth.current = sidebarWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+
   return (
     <div className="relative flex h-full">
       <div className="min-w-0 flex-1">
@@ -50,13 +91,22 @@ export function BoardWithSidebar({
         className={cn(
           // Mobile: fixed full-width overlay (sm: capped at 384px)
           'fixed inset-y-0 right-0 z-50 w-full sm:w-96',
-          // Desktop: relative panel beside board
-          'md:relative md:inset-auto md:z-auto md:w-96 md:shrink-0',
-          // Slide transition
+          // Desktop: relative panel beside board, width controlled by state
+          'md:relative md:inset-auto md:z-auto md:shrink-0',
+          // Slide transition (disable during drag to avoid jank)
           'transition-transform duration-300 ease-in-out',
           sidebarOpen ? 'translate-x-0' : 'translate-x-full',
         )}
+        style={{ width: sidebarOpen ? `${sidebarWidth}px` : undefined }}
       >
+        {/* Resize handle — desktop only */}
+        {sidebarOpen && (
+          <div
+            onMouseDown={startResize}
+            className="absolute inset-y-0 left-0 z-10 hidden w-1 cursor-col-resize md:block hover:bg-violet-400 active:bg-violet-500 transition-colors"
+            title="Drag to resize"
+          />
+        )}
         <AgentSidebar
           projectId={projectId}
           onClose={() => setSidebarOpen(false)}
