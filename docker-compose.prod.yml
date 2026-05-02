@@ -1,0 +1,69 @@
+# Production Docker Compose — kanban-architect
+#
+# Starts three services:
+#   postgres  — PostgreSQL 16 database
+#   api       — Hono REST + SSE backend (port 4000)
+#   web       — Next.js 14 frontend (port 3000)
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Required before first run:
+#   Create apps/api/.env (copy from apps/api/.env.example and fill in API keys)
+#
+# NEXT_PUBLIC_API_URL is baked into the web bundle at build time.
+# It must be the URL the *browser* uses to reach the API.
+# For Docker Desktop on localhost the default (http://localhost:4000) is correct.
+# For a remote server set it before building:
+#   NEXT_PUBLIC_API_URL=https://api.example.com docker compose -f docker-compose.prod.yml build web
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kanban-architect
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kanban-architect"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      target: api-runner
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    # Load all vars from apps/api/.env (LLM_PROVIDER, API keys, scheduler settings…)
+    env_file:
+      - apps/api/.env
+    environment:
+      # Override DATABASE_URL to use the postgres service name instead of localhost
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/kanban-architect
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      target: web-runner
+      args:
+        # NEXT_PUBLIC_API_URL must be the URL the browser reaches the API on.
+        # Default works for Docker Desktop (browser on localhost → port 4000).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

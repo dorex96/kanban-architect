@@ -1,0 +1,52 @@
+# ─── Dependencies ───────────────────────────────────────────────────────────
+# Excluded because Docker stages run `npm ci` to install them fresh.
+node_modules
+.npm
+
+# ─── Build outputs ──────────────────────────────────────────────────────────
+# Excluded because Docker stages generate these during the build.
+apps/api/dist
+apps/web/.next
+packages/types/dist
+*.tsbuildinfo
+.turbo
+
+# ─── Environment files — NEVER bake secrets into images ─────────────────────
+.env
+.env.*
+apps/api/.env
+apps/api/.env.*
+apps/web/.env
+apps/web/.env.*
+apps/web/.env.local
+
+# ─── Version control ────────────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+
+# ─── Docker files (not needed inside the build context) ─────────────────────
+Dockerfile
+docker-compose.yml
+docker-compose.prod.yml
+
+# ─── Documentation ──────────────────────────────────────────────────────────
+docs/
+README.md
+CLAUDE.md
+LICENSE
+
+# ─── Test artifacts ─────────────────────────────────────────────────────────
+coverage/
+*.test.ts
+*.spec.ts
+vitest.config.ts
+
+# ─── Editor and OS ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# ─── Turborepo cache ────────────────────────────────────────────────────────
+.turbo/

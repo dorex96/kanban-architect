@@ -227,6 +227,21 @@ curl http://localhost:4000/health
 | `npm run db:migrate` | Run Prisma migrations |
 | `npm run db:studio` | Open Prisma Studio (DB GUI) |
 
+## Docker Deployment
+
+Run the full stack (PostgreSQL, API, frontend) on Docker Desktop with a single command — no local Node.js or database installation required.
+
+→ **[Full deployment guide](docs/docker-deployment.md)**
+
+Quick start (after creating `apps/api/.env` from `apps/api/.env.example`):
+
+```bash
+docker compose -f docker-compose.prod.yml build
+docker compose -f docker-compose.prod.yml up -d
+# → frontend: http://localhost:3000
+# → API:      http://localhost:4000/health
+```
+
 ## Project Structure
 
 ```

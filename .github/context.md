@@ -14,6 +14,7 @@
 - **`apps/api/`:** Hono with CORS, global error handler, `GET /health`, full Project CRUD (including `GET /projects/:id`) & Task CRUD endpoints, Agent streaming endpoint (`POST /agent/run` with useChat-compatible messages format), chat history endpoints (`GET/DELETE /agent/messages`), agent logs (`GET /agent/logs`), internal deterministic check endpoint (`POST /internal/task-health/run-once`), weekly-check internal endpoints (`POST /internal/weekly-project-check/run-once` with optional `projectId`, `GET /internal/weekly-project-check/history?projectId=&limit=`), Prisma client, Zod config. Streamed agent errors now return specific messages to the client (instead of generic text). Agent tools and system prompt now expose task `priority`, `startDate`, and `endDate`, so the AI can read, set, reschedule, and clear task timing metadata. Deterministic in-app scheduler is controlled via env vars and runs deadline/workload checks with notification dedupe. Weekly-check service applies immediate retry/backoff (1s, 3s by default) for transient LLM failures. Reply-context injection now includes an ambiguity guard that prevents bulk task updates from short follow-ups like "Implementato". **Feature-Based (Vertical Slice) Architecture** — `features/`, `lib/`, `middlewares/`, `common`.
 - **Notifications dedupe restoration (2026-04-29):** reintroduced task-specific dedupe (`Notification.taskId` + `SentNotificationLog`) with a clean Prisma migration, regenerated client, and restored task-health per-task pending/daily-limit checks.
 - **Notification same-day resend behavior fix (2026-04-29):** daily task dedupe now checks active notifications (`deletedAt: null`) created in the same UTC day. If a deadline notification is soft-deleted, it can be re-sent the same day; if it is not deleted, same-day re-send remains blocked.
+- **Docker API build fix (2026-05-02):** production compose build now strips `*.tsbuildinfo` from Docker context and deletes any residual build-info files in the Docker `source` stage so `@kanban/types` always emits `dist` and API TypeScript resolution of `@kanban/types` is deterministic.
 - **`packages/types/`:** Shared types: `Task`, `TaskStatus`, `Project`, `Event`, `AgentLogEntry`, `ToolCall`, `ToolCallResult`, `CreateTaskInput`, `UpdateTaskInput`, `UpdateProjectInput`, `Board`, `NotificationReplyContext`, `WeeklyProjectCheckBatchSummary`, `WeeklyProjectCheckRunItem`.
 - **Database:** PostgreSQL via local install. Prisma schema with 7 models (Project, Task, Event, AgentLog, ChatMessage, Notification, WeeklyProjectCheckRun), migrations applied.
 - **README:** Includes a clear "Project Status: Work in Progress" section for public-repo expectations.
@@ -94,6 +95,9 @@
 `.env.example` → Environment variable template
 `.env` → Local environment variables (gitignored)
 `docker-compose.yml` → PostgreSQL 16 service (optional)
+`docker-compose.prod.yml` → Production stack (postgres + api + web) with multi-stage Docker targets
+`Dockerfile` → Multi-stage production build for API and web standalone runner images
+`.dockerignore` → Docker build-context exclusions for deterministic container builds
 `packages/types/package.json` → @kanban/types package config
 `packages/types/tsconfig.json` → Types package TS config
 `packages/types/src/index.ts` → Shared type definitions (Task, Project, Event, AgentLogEntry, etc.)
