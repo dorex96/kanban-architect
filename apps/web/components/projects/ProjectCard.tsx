@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { Project } from '@kanban/types';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface ProjectCardProps {
   project: Project;
@@ -11,6 +12,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, onRename, onDelete }: ProjectCardProps) {
+  const { unreadCount } = useNotifications(project.id);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(project.name);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -88,12 +90,19 @@ export function ProjectCard({ project, onRename, onDelete }: ProjectCardProps) {
               className="w-full rounded border border-violet-400 px-2 py-0.5 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
           ) : (
-            <Link
-              href={`/board/${project.id}`}
-              className="block truncate text-sm font-medium text-stone-900 transition-colors hover:text-violet-600"
-            >
-              {project.name}
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/board/${project.id}`}
+                className="block truncate text-sm font-medium text-stone-900 transition-colors hover:text-violet-600"
+              >
+                {project.name}
+              </Link>
+              {unreadCount > 0 && (
+                <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-violet-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
           )}
           <p className="mt-0.5 text-xs text-stone-400">Created {date}</p>
         </div>
